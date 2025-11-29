@@ -228,7 +228,7 @@ jobs:
       # For demonstration purposes - in production, use proper K8s authentication
       # Option 1: Using kubeconfig from secrets (recommended for cloud clusters)
       - name: Configure kubectl (from kubeconfig secret)
-        if: ${{ secrets.KUBE_CONFIG != '' }}
+        if: secrets.KUBE_CONFIG != ''
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
