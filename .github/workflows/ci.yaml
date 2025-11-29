@@ -1,0 +1,322 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE_NAME: ${{ github.repository_owner }}/api-service
+  WEB_IMAGE_NAME: ${{ github.repository_owner }}/web-service
+
+jobs:
+  # ==================== CI PHASE ====================
+  
+  # Job 1: Test and Lint API Service
+  test-api:
+    name: Test & Lint API Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./api-service
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: api-service/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: api-service/coverage/
+          retention-days: 7
+
+  # Job 2: SAST - Static Application Security Testing
+  sast-scan:
+    name: SAST Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/nodejs
+          generateSarif: true
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # Job 3: Build Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-api, sast-scan]
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      api-image-digest: ${{ steps.build-api.outputs.digest }}
+      web-image-digest: ${{ steps.build-web.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for API service
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API service image
+        id: build-api
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api-service
+          file: ./api-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Web service
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Web service image
+        id: build-web
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web-service
+          file: ./web-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 4: Scan Docker Images for Vulnerabilities
+  scan-images:
+    name: Scan Images with Trivy
+    runs-on: ubuntu-latest
+    needs: build-images
+    permissions:
+      contents: read
+      security-events: write
+    
+    strategy:
+      matrix:
+        service: [api-service, web-service]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.ref_name }}
+          format: 'sarif'
+          output: 'trivy-${{ matrix.service }}-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.service }}-results.sarif'
+          category: 'trivy-${{ matrix.service }}'
+
+      - name: Run Trivy for JSON report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.ref_name }}
+          format: 'json'
+          output: 'trivy-${{ matrix.service }}-report.json'
+
+      - name: Upload Trivy JSON report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.service }}-report
+          path: 'trivy-${{ matrix.service }}-report.json'
+          retention-days: 30
+
+  # ==================== CD PHASE ====================
+  
+  # Job 5: Deploy to Kubernetes
+  deploy-kubernetes:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build-images, scan-images]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: http://devops-demo.local
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      # For demonstration purposes - in production, use proper K8s authentication
+      # Option 1: Using kubeconfig from secrets (recommended for cloud clusters)
+      - name: Configure kubectl (from kubeconfig secret)
+        if: secrets.KUBE_CONFIG != ''
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      # Option 2: For local development (Minikube/Kind)
+      # You would need to expose your cluster and set up proper authentication
+      
+      - name: Create namespace if not exists
+        run: |
+          kubectl get namespace devops-demo || kubectl create namespace devops-demo
+
+      - name: Update image tags in manifests
+        run: |
+          # Update API service image
+          sed -i "s|ghcr.io/YOUR_GITHUB_USERNAME/api-service:latest|${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}|g" k8s/api-deployment.yaml
+          
+          # Update Web service image
+          sed -i "s|ghcr.io/YOUR_GITHUB_USERNAME/web-service:latest|${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:${{ github.ref_name }}|g" k8s/web-deployment.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/api-deployment.yaml
+          kubectl apply -f k8s/api-service.yaml
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/web-service.yaml
+          kubectl apply -f k8s/ingress.yaml
+
+      - name: Wait for API deployment rollout
+        run: |
+          kubectl rollout status deployment/api-service -n devops-demo --timeout=300s
+
+      - name: Wait for Web deployment rollout
+        run: |
+          kubectl rollout status deployment/web-service -n devops-demo --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployments -n devops-demo
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n devops-demo
+          echo ""
+          echo "=== Services ==="
+          kubectl get services -n devops-demo
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n devops-demo
+
+      - name: Check pod health
+        run: |
+          # Wait a bit for pods to stabilize
+          sleep 10
+          
+          # Get pod status
+          API_PODS=$(kubectl get pods -n devops-demo -l app=api-service -o jsonpath='{.items[*].status.phase}')
+          WEB_PODS=$(kubectl get pods -n devops-demo -l app=web-service -o jsonpath='{.items[*].status.phase}')
+          
+          echo "API Pods Status: $API_PODS"
+          echo "Web Pods Status: $WEB_PODS"
+          
+          # Check if all pods are running
+          if [[ "$API_PODS" == *"Running"* ]] && [[ "$WEB_PODS" == *"Running"* ]]; then
+            echo "✅ All pods are running successfully!"
+          else
+            echo "❌ Some pods are not running properly"
+            kubectl get pods -n devops-demo
+            exit 1
+          fi
+
+  # Job 6: Deployment Notification
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: deploy-kubernetes
+    if: always()
+    
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ needs.deploy-kubernetes.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images Deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "- API Service: \`${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Web Service: \`${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY

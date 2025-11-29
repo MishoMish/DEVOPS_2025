@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Demo - Web Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .emoji {
+            font-size: 3em;
+            margin: 20px 0;
+        }
+        #api-message {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-size: 1.2em;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .success {
+            color: #51cf66;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello from the Web 😎</h1>
+        <div class="emoji">🚀</div>
+        <p>DevOps Demo Project</p>
+        <p class="info">Kubernetes • Docker • CI/CD • Security</p>
+        <div id="api-message" class="loading">
+            Fetching message from API...
+        </div>
+    </div>
+
+    <script>
+        // Fetch message from API service
+        async function fetchApiMessage() {
+            const apiMessageElement = document.getElementById('api-message');
+            
+            try {
+                const response = await fetch('/api/hello');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                apiMessageElement.textContent = data.message;
+                apiMessageElement.classList.remove('loading', 'error');
+                apiMessageElement.classList.add('success');
+            } catch (error) {
+                console.error('Error fetching API message:', error);
+                apiMessageElement.textContent = `❌ Failed to connect to API: ${error.message}`;
+                apiMessageElement.classList.remove('loading', 'success');
+                apiMessageElement.classList.add('error');
+            }
+        }
+
+        // Fetch on page load
+        fetchApiMessage();
+
+        // Retry every 5 seconds if failed
+        setInterval(() => {
+            const apiMessageElement = document.getElementById('api-message');
+            if (apiMessageElement.classList.contains('error')) {
+                fetchApiMessage();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
