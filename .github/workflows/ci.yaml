@@ -225,17 +225,17 @@ jobs:
         with:
           version: 'latest'
 
-      # For demonstration purposes - in production, use proper K8s authentication
-      # Option 1: Using kubeconfig from secrets (recommended for cloud clusters)
-      - name: Configure kubectl (from kubeconfig secret)
-        if: secrets.KUBE_CONFIG != ''
+      # Configure kubectl with kubeconfig from secrets
+      - name: Configure kubectl
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # Option 2: For local development (Minikube/Kind)
-      # You would need to expose your cluster and set up proper authentication
+      # Note: For Minikube, GitHub Actions won't be able to reach your local cluster
+      # This demonstrates the workflow - in production use cloud Kubernetes (AKS/EKS/GKE)
       
       - name: Create namespace if not exists
         run: |
