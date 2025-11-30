@@ -9,8 +9,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  API_IMAGE_NAME: ${{ toLower(github.repository_owner) }}/api-service
-  WEB_IMAGE_NAME: ${{ toLower(github.repository_owner) }}/web-service
+  API_IMAGE_NAME: ${{ lower(github.repository_owner) }}/api-service
+  WEB_IMAGE_NAME: ${{ lower(github.repository_owner) }}/web-service
 
 jobs:
   # ==================== CI PHASE ====================
