@@ -9,8 +9,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  API_IMAGE_NAME: ${{ github.repository_owner }}/api-service
-  WEB_IMAGE_NAME: ${{ github.repository_owner }}/web-service
+  API_IMAGE_NAME: ${{ toLower(github.repository_owner) }}/api-service
+  WEB_IMAGE_NAME: ${{ toLower(github.repository_owner) }}/web-service
 
 jobs:
   # ==================== CI PHASE ====================
@@ -159,9 +159,7 @@ jobs:
       matrix:
         include:
           - service: api-service
-            image-name: ${{ github.repository_owner }}/api-service
           - service: web-service
-            image-name: ${{ github.repository_owner }}/web-service
     
     steps:
       - name: Checkout code
@@ -177,7 +175,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ matrix.image-name }}:${{ github.ref_name }}
+          image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
           format: 'table'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
@@ -195,7 +193,7 @@ jobs:
       - name: Run Trivy for JSON report
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ matrix.image-name }}:${{ github.ref_name }}
+          image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
           format: 'json'
           exit-code: '0'
           output: 'trivy-${{ matrix.service }}-report.json'
