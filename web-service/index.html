@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -17,10 +19,12 @@
             min-height: 100vh;
             padding: 20px;
         }
+
         .main-container {
             max-width: 900px;
             margin: 0 auto;
         }
+
         .container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -30,15 +34,18 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
             margin-bottom: 20px;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
         }
+
         h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
+
         h2 {
             font-size: 1.4em;
             margin-bottom: 15px;
@@ -46,31 +53,37 @@
             align-items: center;
             gap: 10px;
         }
+
         .emoji {
             font-size: 2.5em;
             margin: 10px 0;
         }
+
         .status-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
+
         .status-card {
             background: rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             padding: 20px;
             text-align: center;
         }
+
         .status-card .value {
             font-size: 2em;
             font-weight: bold;
             margin: 10px 0;
         }
+
         .status-card .label {
             opacity: 0.9;
             font-size: 0.9em;
         }
+
         #api-message {
             padding: 20px;
             background: rgba(255, 255, 255, 0.2);
@@ -83,15 +96,31 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+
         .loading {
             animation: pulse 1.5s ease-in-out infinite;
         }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
-        .error { color: #ff6b6b; }
-        .success { color: #51cf66; }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .success {
+            color: #51cf66;
+        }
+
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -99,22 +128,33 @@
             font-size: 0.85em;
             font-weight: 500;
         }
-        .badge-success { background: rgba(81, 207, 102, 0.3); }
-        .badge-error { background: rgba(255, 107, 107, 0.3); }
-        .badge-info { background: rgba(102, 126, 234, 0.3); }
-        
+
+        .badge-success {
+            background: rgba(81, 207, 102, 0.3);
+        }
+
+        .badge-error {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(102, 126, 234, 0.3);
+        }
+
         /* Messages / Guestbook */
         .messages-list {
             max-height: 300px;
             overflow-y: auto;
             margin: 15px 0;
         }
+
         .message-item {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 10px;
         }
+
         .message-author {
             font-weight: bold;
             margin-bottom: 5px;
@@ -122,25 +162,30 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .message-time {
             font-size: 0.8em;
             opacity: 0.7;
         }
+
         .message-content {
             opacity: 0.95;
         }
-        
+
         /* Form */
         .message-form {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
+
         .form-row {
             display: flex;
             gap: 10px;
         }
-        input, textarea {
+
+        input,
+        textarea {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
@@ -149,14 +194,19 @@
             font-size: 1em;
             width: 100%;
         }
-        input::placeholder, textarea::placeholder {
+
+        input::placeholder,
+        textarea::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
-        input:focus, textarea:focus {
+
+        input:focus,
+        textarea:focus {
             outline: none;
             border-color: rgba(255, 255, 255, 0.5);
             background: rgba(255, 255, 255, 0.25);
         }
+
         button {
             background: rgba(255, 255, 255, 0.25);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -167,20 +217,23 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         button:hover {
             background: rgba(255, 255, 255, 0.35);
         }
+
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .info {
             margin-top: 15px;
             font-size: 0.9em;
             opacity: 0.8;
             text-align: center;
         }
+
         .tech-badges {
             display: flex;
             flex-wrap: wrap;
@@ -188,13 +241,14 @@
             justify-content: center;
             margin-top: 10px;
         }
+
         .tech-badge {
             background: rgba(255, 255, 255, 0.2);
             padding: 5px 12px;
             border-radius: 15px;
             font-size: 0.85em;
         }
-        
+
         /* DB Info */
         .db-info {
             display: flex;
@@ -202,6 +256,7 @@
             gap: 15px;
             justify-content: center;
         }
+
         .db-info-item {
             background: rgba(255, 255, 255, 0.1);
             padding: 10px 15px;
@@ -209,6 +264,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="main-container">
         <!-- Header Section -->
@@ -232,7 +288,7 @@
             <div id="api-message" class="loading">
                 Connecting to API...
             </div>
-            
+
             <div class="status-grid">
                 <div class="status-card">
                     <div class="label">Total Visitors</div>
@@ -264,16 +320,18 @@
         <!-- Guestbook Section -->
         <div class="container">
             <h2>📝 Guestbook</h2>
-            <p style="margin-bottom: 15px; opacity: 0.9;">Leave a message! Data is stored in PostgreSQL via Flyway migrations.</p>
-            
+            <p style="margin-bottom: 15px; opacity: 0.9;">Leave a message! Data is stored in PostgreSQL via Flyway
+                migrations.</p>
+
             <form class="message-form" id="message-form">
                 <div class="form-row">
                     <input type="text" id="author-input" placeholder="Your name (optional)" maxlength="100">
                 </div>
-                <textarea id="content-input" placeholder="Write your message..." rows="2" maxlength="500" required></textarea>
+                <textarea id="content-input" placeholder="Write your message..." rows="2" maxlength="500"
+                    required></textarea>
                 <button type="submit" id="submit-btn">Send Message 📨</button>
             </form>
-            
+
             <div class="messages-list" id="messages-list">
                 <div class="loading">Loading messages...</div>
             </div>
@@ -289,13 +347,13 @@
         // Fetch API hello and update stats
         async function fetchApiMessage() {
             const apiMessageElement = document.getElementById('api-message');
-            
+
             try {
                 const response = await fetch('/api/hello');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
+
                 const data = await response.json();
-                
+
                 apiMessageElement.innerHTML = `
                     <span>${data.message}</span>
                     <span class="badge ${data.database === 'connected' ? 'badge-success' : 'badge-error'}">
@@ -304,10 +362,10 @@
                 `;
                 apiMessageElement.classList.remove('loading', 'error');
                 apiMessageElement.classList.add('success');
-                
+
                 document.getElementById('visitor-count').textContent = data.visitors || '0';
                 document.getElementById('db-status').textContent = data.database === 'connected' ? '✅' : '❌';
-                
+
             } catch (error) {
                 apiMessageElement.textContent = `❌ API Error: ${error.message}`;
                 apiMessageElement.classList.remove('loading', 'success');
@@ -320,7 +378,7 @@
             try {
                 const response = await fetch('/api/stats');
                 if (!response.ok) return;
-                
+
                 const data = await response.json();
                 if (data.stats) {
                     document.getElementById('visitor-count').textContent = data.stats.totalVisits;
@@ -335,11 +393,11 @@
         // Fetch database info
         async function fetchDbInfo() {
             const dbInfoElement = document.getElementById('db-info');
-            
+
             try {
                 const response = await fetch('/api/db-info');
                 const data = await response.json();
-                
+
                 if (data.connected) {
                     dbInfoElement.innerHTML = `
                         <div class="db-info-item">🟢 Connected</div>
@@ -358,11 +416,11 @@
         // Fetch messages
         async function fetchMessages() {
             const messagesElement = document.getElementById('messages-list');
-            
+
             try {
                 const response = await fetch('/api/messages');
                 const data = await response.json();
-                
+
                 if (data.messages && data.messages.length > 0) {
                     messagesElement.innerHTML = data.messages.map(msg => `
                         <div class="message-item">
@@ -388,12 +446,12 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ author, content })
             });
-            
+
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || 'Failed to post message');
             }
-            
+
             return response.json();
         }
 
@@ -412,14 +470,14 @@
         // Form submission
         document.getElementById('message-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const authorInput = document.getElementById('author-input');
             const contentInput = document.getElementById('content-input');
             const submitBtn = document.getElementById('submit-btn');
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Sending...';
-            
+
             try {
                 await postMessage(authorInput.value || 'Anonymous', contentInput.value);
                 contentInput.value = '';
@@ -444,4 +502,5 @@
         setInterval(fetchMessages, 60000);
     </script>
 </body>
+
 </html>
