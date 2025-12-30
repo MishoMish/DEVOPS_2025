@@ -13,7 +13,7 @@ env:
   API_IMAGE_NAME: mishomish/api-service
   WEB_IMAGE_NAME: mishomish/web-service
   KUBECONFIG: ${{ github.runner.workspace }}/.kube/config
-  
+
 jobs:
   # ==================== CI PHASE ====================
   
@@ -225,6 +225,8 @@ jobs:
     environment:
       name: production
       url: http://devops-demo.local
+    env:
+      KUBECONFIG: /home/misho/.kube/config
     
     steps:
       - name: Checkout code
