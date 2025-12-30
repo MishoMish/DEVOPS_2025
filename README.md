@@ -1,12 +1,21 @@
 # DevOps Final Project - Complete CI/CD Pipeline
 
+[![CI/CD Pipeline](https://github.com/MishoMish/DEVOPS_2025/actions/workflows/ci.yaml/badge.svg)](https://github.com/MishoMish/DEVOPS_2025/actions/workflows/ci.yaml)
 ![DevOps](https://img.shields.io/badge/DevOps-Project-blue)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-Automated-brightgreen)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-326CE5)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED)
 ![Security](https://img.shields.io/badge/Security-SAST%20%2B%20Trivy-red)
 
 A comprehensive DevOps demonstration project showcasing a complete automated software delivery pipeline with CI/CD, containerization, Kubernetes deployment, security scanning, and infrastructure as code.
+
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| **Web Application** | http://<ip> |
+| **API Endpoint** | http://<ip>/api/hello |
+| **GitHub Actions** | [View Pipeline](https://github.com/MishoMish/DEVOPS_2025/actions) |
 
 ## 📋 Table of Contents
 
@@ -579,10 +588,10 @@ kubectl apply -f k8s/
 **Option 1: Edit /etc/hosts**
 ```bash
 # Get Minikube IP
-minikube ip  # e.g., 192.168.49.2
+minikube ip
 
 # Add to /etc/hosts
-sudo sh -c "echo '192.168.49.2 devops-demo.local' >> /etc/hosts"
+sudo sh -c "echo '<ip> devops-demo.local' >> /etc/hosts"
 ```
 
 **Option 2: Use Minikube tunnel**

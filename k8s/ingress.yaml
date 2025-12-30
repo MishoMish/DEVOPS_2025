@@ -10,8 +10,8 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: devops-demo.local
-    http:
+  # Accept any host (allows access via IP address directly)
+  - http:
       paths:
       # API routes - must come first for proper matching
       - path: /api

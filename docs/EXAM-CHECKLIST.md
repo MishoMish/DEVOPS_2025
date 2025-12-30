@@ -2,13 +2,24 @@
 
 Use this checklist to ensure your project meets all requirements and you're ready for the presentation.
 
+## 🖥️ Live Environment
+
+| Component | Details |
+|-----------|---------|
+| **VM IP** | `<ip>` |
+| **SSH Access** | `ssh misho@<ip>` |
+| **Web URL** | http://<ip> |
+| **API URL** | http://<ip>/api/hello |
+| **GitHub Repo** | https://github.com/MishoMish/DEVOPS_2025 |
+| **GitHub Actions** | https://github.com/MishoMish/DEVOPS_2025/actions |
+
 ## ✅ Mandatory Requirements
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
 | Pipeline starts with Git repository | ✅ | GitHub repo with `.github/workflows/ci.yaml` |
 | Continuous Integration | ✅ | Tests, linting, SAST in pipeline |
-| Deploy to Kubernetes | ✅ | K8s manifests + deployment job |
+| Deploy to Kubernetes | ✅ | Self-hosted runner deploys to K3s on VM |
 | At least 7 topics covered | ✅ | **11 topics covered** (see below) |
 | T-shaped or E-shaped solution | ✅ | Horizontal + Security deep dive |
 | Solution as code | ✅ | All infrastructure and configs as code |
@@ -24,10 +35,10 @@ Use this checklist to ensure your project meets all requirements and you're read
 | 4 | Branching Strategies | ✅ | GitHub Flow (see `BRANCHING-STRATEGY.md`) |
 | 5 | Building Pipelines | ✅ | GitHub Actions with 6 jobs |
 | 6 | Continuous Integration | ✅ | Automated tests, lint, SAST, build |
-| 7 | Continuous Delivery | ✅ | Auto-deploy to K8s on main branch |
+| 7 | Continuous Delivery | ✅ | Auto-deploy to K3s via self-hosted runner |
 | 8 | Security | ✅ | **DEEP DIVE** - SAST + Trivy + security contexts |
 | 9 | Docker | ✅ | Multi-stage builds, non-root, health checks |
-| 10 | Kubernetes | ✅ | Deployments, Services, Ingress, rolling updates |
+| 10 | Kubernetes | ✅ | K3s with Deployments, Services, Ingress, rolling updates |
 | 11 | Infrastructure as Code | ✅ | Terraform (namespace, quotas, policies) |
 | 12 | Database Changes | ❌ | Not implemented (no database in this project) |
 
@@ -68,9 +79,10 @@ Your deep dive covers:
 | `api-service/Dockerfile` | Multi-stage Docker build with security |
 | `k8s/api-deployment.yaml` | K8s deployment with security context |
 | `terraform/main.tf` | IaC for namespace, quotas, network policies |
-| `SECURITY-DEEP-DIVE.md` | Deep dive documentation |
-| `BRANCHING-STRATEGY.md` | Git workflow documentation |
-| `ARCHITECTURE.md` | System diagrams |
+| `docs/SECURITY-DEEP-DIVE.md` | Deep dive documentation |
+| `docs/BRANCHING-STRATEGY.md` | Git workflow documentation |
+| `docs/ARCHITECTURE.md` | System diagrams |
+| `docs/DEMO-COMMANDS.md` | Commands for live demo |
 
 ## ⏱️ Presentation Time Allocation (12-15 min)
 
