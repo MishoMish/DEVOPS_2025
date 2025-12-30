@@ -32,6 +32,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: api-service/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -39,8 +41,12 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run unit tests
-        run: npm test
+      - name: Run unit tests with coverage
+        run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
+
+      - name: Check dependency vulnerabilities
+        run: npm audit --audit-level=high
+        continue-on-error: true  # Don't fail on audit issues, but report them
 
       - name: Upload test coverage
         uses: actions/upload-artifact@v4

@@ -138,6 +138,84 @@ resource "kubernetes_network_policy" "devops_demo_network_policy" {
   }
 }
 
+# LimitRange for namespace (ensures all pods have resource constraints)
+resource "kubernetes_limit_range" "devops_demo_limits" {
+  metadata {
+    name      = "devops-demo-limits"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+  }
+
+  spec {
+    limit {
+      type = "Container"
+      default = {
+        cpu    = "200m"
+        memory = "128Mi"
+      }
+      default_request = {
+        cpu    = "100m"
+        memory = "64Mi"
+      }
+      max = {
+        cpu    = "500m"
+        memory = "256Mi"
+      }
+      min = {
+        cpu    = "50m"
+        memory = "32Mi"
+      }
+    }
+  }
+}
+
+# ConfigMap for application configuration
+resource "kubernetes_config_map" "app_config" {
+  metadata {
+    name      = "app-config"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+    labels = {
+      app        = "devops-demo"
+      managed-by = "terraform"
+    }
+  }
+
+  data = {
+    NODE_ENV     = "production"
+    LOG_LEVEL    = "info"
+    API_PORT     = "3000"
+    WEB_PORT     = "80"
+  }
+}
+
+# Network Policy for web service (allow ingress traffic)
+resource "kubernetes_network_policy" "web_ingress_policy" {
+  metadata {
+    name      = "web-ingress-policy"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "web-service"
+      }
+    }
+
+    ingress {
+      from {
+        namespace_selector {}  # Allow from ingress controller
+      }
+
+      ports {
+        port     = "80"
+        protocol = "TCP"
+      }
+    }
+
+    policy_types = ["Ingress"]
+  }
+}
+
 # Outputs
 output "namespace_name" {
   description = "The name of the created namespace"
@@ -147,4 +225,20 @@ output "namespace_name" {
 output "namespace_uid" {
   description = "The UID of the created namespace"
   value       = kubernetes_namespace.devops_demo.metadata[0].uid
+}
+
+output "resource_quota" {
+  description = "Resource quota applied to namespace"
+  value = {
+    cpu_requests    = kubernetes_resource_quota.devops_demo_quota.spec[0].hard["requests.cpu"]
+    memory_requests = kubernetes_resource_quota.devops_demo_quota.spec[0].hard["requests.memory"]
+    cpu_limits      = kubernetes_resource_quota.devops_demo_quota.spec[0].hard["limits.cpu"]
+    memory_limits   = kubernetes_resource_quota.devops_demo_quota.spec[0].hard["limits.memory"]
+    max_pods        = kubernetes_resource_quota.devops_demo_quota.spec[0].hard["pods"]
+  }
+}
+
+output "config_map_name" {
+  description = "Name of the application ConfigMap"
+  value       = kubernetes_config_map.app_config.metadata[0].name
 }

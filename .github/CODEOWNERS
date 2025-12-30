@@ -1,0 +1,26 @@
+# CODEOWNERS - Define code ownership for automated review requests
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+*                       @mishomish
+
+# CI/CD Pipeline ownership
+/.github/               @mishomish
+
+# Kubernetes manifests - infrastructure team ownership
+/k8s/                   @mishomish
+
+# Terraform IaC - infrastructure team ownership
+/terraform/             @mishomish
+
+# API Service - backend team ownership
+/api-service/           @mishomish
+
+# Web Service - frontend team ownership
+/web-service/           @mishomish
+
+# Docker configurations
+**/Dockerfile           @mishomish
+
+# Documentation
+*.md                    @mishomish

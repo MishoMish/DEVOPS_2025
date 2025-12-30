@@ -92,25 +92,31 @@ This project demonstrates **10 key DevOps topics**:
 | 4 | **Security** | SAST (Semgrep) + Container Scanning (Trivy) |
 | 5 | **Docker** | Multi-stage builds, security best practices |
 | 6 | **Kubernetes** | Deployments, Services, Ingress, Health checks |
-| 7 | **Infrastructure as Code** | Terraform for K8s resources |
+| 7 | **Infrastructure as Code** | Terraform for K8s resources, ConfigMaps, Quotas |
 | 8 | **Building Pipelines** | GitHub Actions workflow |
-| 9 | **Collaboration** | PR workflows, code review gates |
+| 9 | **Collaboration** | PR templates, CODEOWNERS, branching strategy |
 | 10 | **SDLC Phases** | Complete development lifecycle automation |
+| 11 | **Branching Strategies** | GitHub Flow with feature/bugfix/hotfix branches |
 
 ## 📁 Project Structure
 
 ```
 .
 ├── .github/
-│   └── workflows/
-│       └── ci.yaml                 # Complete CI/CD pipeline
+│   ├── workflows/
+│   │   └── ci.yaml                 # Complete CI/CD pipeline
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md           # Bug report template
+│   │   └── feature_request.md      # Feature request template
+│   ├── CODEOWNERS                  # Code ownership rules
+│   └── PULL_REQUEST_TEMPLATE.md    # PR template
 ├── api-service/
 │   ├── src/
 │   │   └── index.js               # Express API server
 │   ├── tests/
 │   │   └── health.test.js         # Unit tests
 │   ├── .eslintrc.json             # ESLint configuration
-│   ├── jest.config.js             # Jest configuration
+│   ├── jest.config.js             # Jest configuration with coverage thresholds
 │   ├── package.json               # Node.js dependencies
 │   ├── Dockerfile                 # Multi-stage Docker build
 │   └── .dockerignore              # Docker ignore patterns
@@ -127,12 +133,37 @@ This project demonstrates **10 key DevOps topics**:
 │   ├── web-service.yaml           # Web service manifest
 │   └── ingress.yaml               # Ingress routing rules
 ├── terraform/
-│   ├── main.tf                    # Main Terraform configuration
+│   ├── main.tf                    # Terraform configuration (namespace, quotas, policies)
 │   ├── outputs.tf                 # Terraform outputs
 │   └── terraform.tfvars.example   # Example variables
+├── scripts/
+│   ├── setup.sh                   # Environment setup script
+│   ├── deploy.sh                  # Deployment automation
+│   ├── test.sh                    # Test runner script
+│   └── cleanup.sh                 # Resource cleanup
+├── docs/
+│   ├── ARCHITECTURE.md            # System architecture diagrams
+│   ├── BRANCHING-STRATEGY.md      # Git workflow documentation
+│   ├── SECURITY-DEEP-DIVE.md      # Security scanning deep dive
+│   ├── PRESENTATION.md            # Presentation guide (12-15 min)
+│   ├── EXAM-CHECKLIST.md          # Quick exam preparation checklist
+│   └── TESTING.md                 # Testing guide
+├── docker-compose.yml             # Local development with Docker Compose
+├── .pre-commit-config.yaml        # Pre-commit hooks configuration
 ├── .gitignore                     # Git ignore patterns
 └── README.md                      # This file
 ```
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](README.md) | Main project documentation |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagrams and architecture |
+| [docs/SECURITY-DEEP-DIVE.md](docs/SECURITY-DEEP-DIVE.md) | **Deep dive topic** - Security scanning |
+| [docs/BRANCHING-STRATEGY.md](docs/BRANCHING-STRATEGY.md) | Git workflow and branching |
+| [docs/PRESENTATION.md](docs/PRESENTATION.md) | Presentation guide |
+| [docs/TESTING.md](docs/TESTING.md) | Testing instructions |
 
 ## 🚀 CI/CD Pipeline
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Docker Compose configuration for local testing
 # This allows you to test both services without Kubernetes
 
