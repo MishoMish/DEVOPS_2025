@@ -5,9 +5,11 @@
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-Automated-brightgreen)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-326CE5)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)
 ![Security](https://img.shields.io/badge/Security-SAST%20%2B%20Trivy-red)
+![Topics](https://img.shields.io/badge/Topics-12%2F12-success)
 
-A comprehensive DevOps demonstration project showcasing a complete automated software delivery pipeline with CI/CD, containerization, Kubernetes deployment, security scanning, and infrastructure as code.
+A comprehensive DevOps demonstration project showcasing a complete automated software delivery pipeline with CI/CD, containerization, Kubernetes deployment, security scanning, database migrations, and infrastructure as code. **Covers all 12 course topics!**
 
 ## 🌐 Live Demo
 
@@ -15,6 +17,7 @@ A comprehensive DevOps demonstration project showcasing a complete automated sof
 |---------|-----|
 | **Web Application** | http://<ip> |
 | **API Endpoint** | http://<ip>/api/hello |
+| **Database Info** | http://<ip>/api/db-info |
 | **GitHub Actions** | [View Pipeline](https://github.com/MishoMish/DEVOPS_2025/actions) |
 
 ## 📋 Table of Contents
@@ -23,6 +26,7 @@ A comprehensive DevOps demonstration project showcasing a complete automated sof
 - [Architecture](#architecture)
 - [Technologies & Topics Covered](#technologies--topics-covered)
 - [Project Structure](#project-structure)
+- [Database Integration](#database-integration)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Deep Dive: Security Scanning](#deep-dive-security-scanning)
 - [Prerequisites](#prerequisites)
@@ -34,20 +38,20 @@ A comprehensive DevOps demonstration project showcasing a complete automated sof
 ## 🎯 Project Overview
 
 This project demonstrates a T-shaped DevOps solution with:
-- **Horizontal breadth**: Covering 10+ DevOps topics across the SDLC
+- **Horizontal breadth**: Covering **all 12 DevOps topics** across the SDLC
 - **Vertical depth**: Deep dive into security scanning (SAST and container vulnerability scanning)
 
 ### Application Components
 
-The project consists of two minimal microservices designed specifically to showcase DevOps practices:
+The project consists of microservices with database integration designed to showcase DevOps practices:
 
-1. **API Service** (Node.js/Express)
-   - Single endpoint: `GET /api/hello`
-   - Returns: `{ "message": "Hello from the API 🎉" }`
+1. **API Service** (Node.js/Express + PostgreSQL)
+   - Multiple endpoints: `/api/hello`, `/api/stats`, `/api/messages`, `/api/db-info`
+   - Database-backed visitor tracking and guestbook
    - Includes unit tests and linting
 
 2. **Web Service** (Nginx)
-   - Static HTML page
+   - Interactive HTML page with real-time DB stats
    - JavaScript fetch to API service
    - Displays combined message from both services
 
@@ -86,26 +90,28 @@ The project consists of two minimal microservices designed specifically to showc
 3. Web Service serves HTML page
 4. Browser fetches `/api/hello` from API Service via Ingress
 5. Ingress routes `/api/hello` to API Service
-6. API Service returns JSON response
-7. Web page displays combined result
+6. API Service queries PostgreSQL database
+7. API Service returns JSON response with visitor count
+8. Web page displays combined result with database stats
 
 ## 🛠 Technologies & Topics Covered
 
-This project demonstrates **10 key DevOps topics**:
+This project demonstrates **all 12 key DevOps topics**:
 
 | # | Topic | Implementation |
 |---|-------|----------------|
 | 1 | **Source Control** | Git repository with branching strategy |
-| 2 | **Continuous Integration** | Automated testing, linting, building |
+| 2 | **Continuous Integration** | Automated testing, linting, building, migration validation |
 | 3 | **Continuous Delivery** | Automated deployment to Kubernetes |
 | 4 | **Security** | SAST (Semgrep) + Container Scanning (Trivy) |
 | 5 | **Docker** | Multi-stage builds, security best practices |
 | 6 | **Kubernetes** | Deployments, Services, Ingress, Health checks |
 | 7 | **Infrastructure as Code** | Terraform for K8s resources, ConfigMaps, Quotas |
-| 8 | **Building Pipelines** | GitHub Actions workflow |
+| 8 | **Building Pipelines** | GitHub Actions workflow (8 jobs) |
 | 9 | **Collaboration** | PR templates, CODEOWNERS, branching strategy |
 | 10 | **SDLC Phases** | Complete development lifecycle automation |
 | 11 | **Branching Strategies** | GitHub Flow with feature/bugfix/hotfix branches |
+| 12 | **Database Changes** | PostgreSQL with Flyway migrations |
 
 ## 📁 Project Structure
 
@@ -113,7 +119,7 @@ This project demonstrates **10 key DevOps topics**:
 .
 ├── .github/
 │   ├── workflows/
-│   │   └── ci.yaml                 # Complete CI/CD pipeline
+│   │   └── ci.yaml                 # Complete CI/CD pipeline (8 jobs)
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md           # Bug report template
 │   │   └── feature_request.md      # Feature request template
@@ -121,28 +127,38 @@ This project demonstrates **10 key DevOps topics**:
 │   └── PULL_REQUEST_TEMPLATE.md    # PR template
 ├── api-service/
 │   ├── src/
-│   │   └── index.js               # Express API server
+│   │   └── index.js               # Express API server with PostgreSQL
 │   ├── tests/
 │   │   └── health.test.js         # Unit tests
 │   ├── .eslintrc.json             # ESLint configuration
 │   ├── jest.config.js             # Jest configuration with coverage thresholds
-│   ├── package.json               # Node.js dependencies
+│   ├── package.json               # Node.js dependencies (includes pg)
 │   ├── Dockerfile                 # Multi-stage Docker build
 │   └── .dockerignore              # Docker ignore patterns
 ├── web-service/
-│   ├── index.html                 # Static website
+│   ├── index.html                 # Interactive website with DB stats
 │   ├── nginx.conf                 # Nginx configuration
 │   ├── Dockerfile                 # Nginx Docker build
 │   └── .dockerignore              # Docker ignore patterns
+├── db/
+│   ├── migrations/
+│   │   ├── V1__create_visitors_table.sql    # Visitor tracking tables
+│   │   └── V2__add_messages_table.sql       # Guestbook feature
+│   ├── Dockerfile                 # Flyway migration container
+│   └── flyway.conf                # Flyway configuration
 ├── k8s/
 │   ├── namespace.yaml             # Kubernetes namespace
 │   ├── api-deployment.yaml        # API deployment manifest
 │   ├── api-service.yaml           # API service manifest
 │   ├── web-deployment.yaml        # Web deployment manifest
 │   ├── web-service.yaml           # Web service manifest
-│   └── ingress.yaml               # Ingress routing rules
+│   ├── ingress.yaml               # Ingress routing rules
+│   ├── postgres-deployment.yaml   # PostgreSQL deployment
+│   ├── postgres-secret.yaml       # Database credentials
+│   ├── flyway-job.yaml            # Database migration job
+│   └── flyway-configmap.yaml      # Migration scripts ConfigMap
 ├── terraform/
-│   ├── main.tf                    # Terraform configuration (namespace, quotas, policies)
+│   ├── main.tf                    # Terraform configuration (namespace, quotas, policies, DB)
 │   ├── outputs.tf                 # Terraform outputs
 │   └── terraform.tfvars.example   # Example variables
 ├── scripts/
@@ -157,7 +173,7 @@ This project demonstrates **10 key DevOps topics**:
 │   ├── PRESENTATION.md            # Presentation guide (12-15 min)
 │   ├── EXAM-CHECKLIST.md          # Quick exam preparation checklist
 │   └── TESTING.md                 # Testing guide
-├── docker-compose.yml             # Local development with Docker Compose
+├── docker-compose.yml             # Local development with Docker Compose + PostgreSQL
 ├── .pre-commit-config.yaml        # Pre-commit hooks configuration
 ├── .gitignore                     # Git ignore patterns
 └── README.md                      # This file
@@ -173,6 +189,38 @@ This project demonstrates **10 key DevOps topics**:
 | [docs/BRANCHING-STRATEGY.md](docs/BRANCHING-STRATEGY.md) | Git workflow and branching |
 | [docs/PRESENTATION.md](docs/PRESENTATION.md) | Presentation guide |
 | [docs/TESTING.md](docs/TESTING.md) | Testing instructions |
+
+## 🗄️ Database Integration
+
+This project includes PostgreSQL with Flyway-managed migrations:
+
+### Features
+- **Visitor Tracking**: Counts and logs page visits
+- **Guestbook**: Users can leave messages
+- **Real-time Stats**: Display visitor count and database status
+
+### API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/hello` | GET | Greeting with visitor count |
+| `/api/stats` | GET | Visitor statistics |
+| `/api/messages` | GET | List guestbook messages |
+| `/api/messages` | POST | Add new message |
+| `/api/db-info` | GET | Database connection info |
+
+### Migration Flow
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   CI Phase   │ ──▶ │  Validate    │ ──▶ │   CD Phase   │
+│              │     │  Migrations  │     │              │
+└──────────────┘     └──────────────┘     └──────────────┘
+                            │                     │
+                            ▼                     ▼
+                     ┌──────────────┐     ┌──────────────┐
+                     │  Test DB in  │     │  Apply to    │
+                     │  GitHub CI   │     │  Production  │
+                     └──────────────┘     └──────────────┘
+```
 
 ## 🚀 CI/CD Pipeline
 

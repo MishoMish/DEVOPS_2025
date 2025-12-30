@@ -33,16 +33,16 @@ Use this checklist to ensure your project meets all requirements and you're read
 | 2 | Collaborate | ✅ | PR templates, CODEOWNERS, issue templates |
 | 3 | Source Control | ✅ | Git, `.gitignore`, branch protection |
 | 4 | Branching Strategies | ✅ | GitHub Flow (see `BRANCHING-STRATEGY.md`) |
-| 5 | Building Pipelines | ✅ | GitHub Actions with 6 jobs |
-| 6 | Continuous Integration | ✅ | Automated tests, lint, SAST, build |
+| 5 | Building Pipelines | ✅ | GitHub Actions with 8 jobs |
+| 6 | Continuous Integration | ✅ | Automated tests, lint, SAST, build, DB migrations |
 | 7 | Continuous Delivery | ✅ | Auto-deploy to K3s via self-hosted runner |
 | 8 | Security | ✅ | **DEEP DIVE** - SAST + Trivy + security contexts |
 | 9 | Docker | ✅ | Multi-stage builds, non-root, health checks |
 | 10 | Kubernetes | ✅ | K3s with Deployments, Services, Ingress, rolling updates |
-| 11 | Infrastructure as Code | ✅ | Terraform (namespace, quotas, policies) |
-| 12 | Database Changes | ❌ | Not implemented (no database in this project) |
+| 11 | Infrastructure as Code | ✅ | Terraform (namespace, quotas, policies, secrets) |
+| 12 | Database Changes | ✅ | PostgreSQL with Flyway migrations |
 
-**Note**: Database changes are not required. 7 topics minimum, you have 11!
+**🎉 ALL 12 TOPICS COVERED!**
 
 ## 🎯 Deep Dive Topic: Security Scanning
 
@@ -71,13 +71,38 @@ Your deep dive covers:
 
 **Documentation**: See `SECURITY-DEEP-DIVE.md` for full details.
 
+## 🗄️ Database Changes (Topic 12)
+
+This project includes:
+
+1. **PostgreSQL Database**
+   - Deployed in Kubernetes with PersistentVolumeClaim
+   - Secrets managed via K8s Secrets / Terraform
+
+2. **Flyway Migrations**
+   - SQL migration scripts in `db/migrations/`
+   - Validated in CI pipeline before build
+   - Applied via Kubernetes Job during deployment
+
+3. **Migration Files**
+   - `V1__create_visitors_table.sql` - Visitor tracking
+   - `V2__add_messages_table.sql` - Guestbook feature
+
+4. **API Integration**
+   - Visitor counter stored in database
+   - Guestbook messages persisted
+   - Database health displayed in UI
+
 ## 📁 Key Files to Reference
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/ci.yaml` | Complete CI/CD pipeline |
+| `.github/workflows/ci.yaml` | Complete CI/CD pipeline (8 jobs) |
 | `api-service/Dockerfile` | Multi-stage Docker build with security |
 | `k8s/api-deployment.yaml` | K8s deployment with security context |
+| `k8s/postgres-deployment.yaml` | PostgreSQL database deployment |
+| `k8s/flyway-job.yaml` | Database migration job |
+| `db/migrations/*.sql` | Flyway SQL migration scripts |
 | `terraform/main.tf` | IaC for namespace, quotas, network policies |
 | `docs/SECURITY-DEEP-DIVE.md` | Deep dive documentation |
 | `docs/BRANCHING-STRATEGY.md` | Git workflow documentation |
@@ -88,12 +113,13 @@ Your deep dive covers:
 
 1. **High-level Design** (3 min)
    - Architecture overview
-   - Topics covered
+   - Topics covered (all 12!)
    - T-shaped approach explanation
 
 2. **Low-level Design** (4 min)
-   - CI/CD pipeline walkthrough
+   - CI/CD pipeline walkthrough (8 jobs)
    - Kubernetes configuration
+   - Database migrations
    - Docker best practices
 
 3. **Deep Dive: Security** (4 min)
@@ -114,9 +140,11 @@ Your deep dive covers:
 
 Before the presentation, ensure:
 
-- [ ] Minikube/K8s cluster is running
+- [ ] K3s cluster is running
 - [ ] Ingress controller is enabled
 - [ ] Docker images are pre-built
+- [ ] PostgreSQL is running and healthy
+- [ ] Flyway migrations have been applied
 - [ ] `/etc/hosts` has `devops-demo.local` entry
 - [ ] GitHub Actions has run successfully at least once
 - [ ] Terminal windows are ready for commands
@@ -124,7 +152,7 @@ Before the presentation, ensure:
 ## 🚀 Quick Demo Commands
 
 ```bash
-# Show running pods
+# Show running pods (including database)
 kubectl get pods -n devops-demo
 
 # Show services
@@ -137,6 +165,26 @@ kubectl get ingress -n devops-demo
 curl http://devops-demo.local
 curl http://devops-demo.local/api/hello
 
+# Show database info
+curl http://devops-demo.local/api/db-info
+
+# Show visitor stats
+curl http://devops-demo.local/api/stats
+
+# Show messages
+curl http://devops-demo.local/api/messages
+
+# Post a new message
+curl -X POST http://devops-demo.local/api/messages \
+  -H "Content-Type: application/json" \
+  -d '{"author":"Demo","content":"Hello from presentation!"}'
+
+# Show database pod
+kubectl get pod -n devops-demo -l app=postgres
+
+# Show Flyway migration status
+kubectl logs -n devops-demo job/flyway-migrate
+
 # Show security context
 kubectl get pod -n devops-demo -l app=api-service -o yaml | grep -A 10 securityContext
 
@@ -148,7 +196,7 @@ kubectl get deployment api-service -n devops-demo -o yaml | grep -A 5 strategy
 
 ### Why This Architecture?
 - Microservices pattern demonstrates real-world DevOps
-- Minimal code to focus on DevOps practices
+- Database integration shows complete SDLC
 - Production-ready patterns (health checks, resource limits)
 
 ### Why These Tools?
@@ -156,27 +204,33 @@ kubectl get deployment api-service -n devops-demo -o yaml | grep -A 5 strategy
 - **Semgrep**: Fast, accurate, language-aware SAST
 - **Trivy**: Comprehensive container scanning
 - **Terraform**: Industry-standard IaC
+- **Flyway**: Simple, reliable database migrations
+- **PostgreSQL**: Production-grade database
 
 ### What Makes This Project Stand Out?
-- 11 topics covered (4 more than required!)
+- **All 12 topics covered** (5 more than required!)
 - Comprehensive security scanning (SAST + container)
+- Database with version-controlled migrations
+- E2E tests in CI/CD pipeline
 - Production-grade Kubernetes configuration
 - Extensive documentation
-- Pre-commit hooks for code quality
 
 ## ⚠️ Common Questions & Answers
 
-**Q: Why no database?**
-A: Focus is on DevOps pipeline automation, not application complexity. Adding a database would demonstrate one more topic but isn't required.
+**Q: How do database migrations work?**
+A: Flyway runs as a Kubernetes Job before application deployment. Migrations are validated in CI, then applied during CD. Each SQL file is versioned (V1, V2, etc.) and applied in order.
 
 **Q: Why GitHub Actions over Jenkins?**
 A: Simpler setup, native GitHub integration, YAML-based configuration as code, free for public repos.
 
 **Q: How would you improve this in production?**
-A: Add Helm charts, GitOps (ArgoCD), monitoring (Prometheus/Grafana), secrets management (Vault), and multi-environment deployments.
+A: Add Helm charts, GitOps (ArgoCD), monitoring (Prometheus/Grafana), secrets management (Vault), database backups, and multi-environment deployments.
 
 **Q: What happens if security scan finds critical vulnerabilities?**
 A: Pipeline continues but reports findings. In production, you'd fail the build on CRITICAL findings by changing `exit-code: '1'` in Trivy action.
+
+**Q: What if a database migration fails?**
+A: The Flyway job will fail, and the deployment won't proceed. Flyway tracks applied migrations in a schema_history table, so you can fix and re-run.
 
 ---
 

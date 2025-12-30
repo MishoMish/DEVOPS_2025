@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyway-migrations
+  namespace: devops-demo
+  labels:
+    app: flyway
+    component: migration
+data:
+  V1__create_visitors_table.sql: |
+    -- V1__create_visitors_table.sql
+    -- Flyway migration: Create visitors table to track page visits
+
+    CREATE TABLE IF NOT EXISTS visitors (
+        id SERIAL PRIMARY KEY,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        path VARCHAR(255),
+        visited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create index for faster queries on visited_at
+    CREATE INDEX idx_visitors_visited_at ON visitors(visited_at);
+
+    -- Create a summary table for quick stats
+    CREATE TABLE IF NOT EXISTS visitor_stats (
+        id SERIAL PRIMARY KEY,
+        stat_name VARCHAR(50) UNIQUE NOT NULL,
+        stat_value BIGINT DEFAULT 0,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Initialize total visits counter
+    INSERT INTO visitor_stats (stat_name, stat_value) 
+    VALUES ('total_visits', 0)
+    ON CONFLICT (stat_name) DO NOTHING;
+
+    -- Add comment for documentation
+    COMMENT ON TABLE visitors IS 'Tracks individual page visits for analytics';
+    COMMENT ON TABLE visitor_stats IS 'Stores aggregated visitor statistics';
+  
+  V2__add_messages_table.sql: |
+    -- V2__add_messages_table.sql
+    -- Flyway migration: Create messages table for guestbook feature
+
+    CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        author VARCHAR(100) NOT NULL DEFAULT 'Anonymous',
+        content TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create index for faster queries
+    CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
+
+    -- Add some sample messages
+    INSERT INTO messages (author, content) VALUES 
+        ('DevOps Bot', 'Welcome to the DevOps Demo! 🚀'),
+        ('System', 'Database migrations working correctly ✅');
+
+    COMMENT ON TABLE messages IS 'Guestbook messages from visitors';

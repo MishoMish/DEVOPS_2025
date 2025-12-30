@@ -51,6 +51,26 @@ variable "web_image" {
   default     = "ghcr.io/YOUR_GITHUB_USERNAME/web-service:latest"
 }
 
+# Database variables
+variable "postgres_db" {
+  description = "PostgreSQL database name"
+  type        = string
+  default     = "devopsdb"
+}
+
+variable "postgres_user" {
+  description = "PostgreSQL username"
+  type        = string
+  default     = "devops"
+}
+
+variable "postgres_password" {
+  description = "PostgreSQL password"
+  type        = string
+  default     = "devops123"
+  sensitive   = true
+}
+
 # Create Namespace
 resource "kubernetes_namespace" "devops_demo" {
   metadata {
@@ -97,11 +117,89 @@ resource "kubernetes_resource_quota" "devops_demo_quota" {
   spec {
     hard = {
       "requests.cpu"    = "2"
-      "requests.memory" = "2Gi"
+      "requests.memory" = "4Gi"
       "limits.cpu"      = "4"
-      "limits.memory"   = "4Gi"
-      "pods"            = "10"
+      "limits.memory"   = "6Gi"
+      "pods"            = "15"
+      "persistentvolumeclaims" = "3"
     }
+  }
+}
+
+# PostgreSQL Secret
+resource "kubernetes_secret" "postgres_secret" {
+  metadata {
+    name      = "postgres-secret"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+    labels = {
+      app        = "postgres"
+      managed-by = "terraform"
+    }
+  }
+
+  data = {
+    POSTGRES_DB       = var.postgres_db
+    POSTGRES_USER     = var.postgres_user
+    POSTGRES_PASSWORD = var.postgres_password
+  }
+
+  type = "Opaque"
+}
+
+# PostgreSQL ConfigMap
+resource "kubernetes_config_map" "postgres_config" {
+  metadata {
+    name      = "postgres-config"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+    labels = {
+      app        = "postgres"
+      managed-by = "terraform"
+    }
+  }
+
+  data = {
+    PGDATA = "/var/lib/postgresql/data/pgdata"
+  }
+}
+
+# Database Network Policy - Allow API to connect to PostgreSQL
+resource "kubernetes_network_policy" "postgres_network_policy" {
+  metadata {
+    name      = "postgres-network-policy"
+    namespace = kubernetes_namespace.devops_demo.metadata[0].name
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "postgres"
+      }
+    }
+
+    ingress {
+      from {
+        pod_selector {
+          match_labels = {
+            app = "api-service"
+          }
+        }
+      }
+
+      from {
+        pod_selector {
+          match_labels = {
+            app = "flyway"
+          }
+        }
+      }
+
+      ports {
+        port     = "5432"
+        protocol = "TCP"
+      }
+    }
+
+    policy_types = ["Ingress"]
   }
 }
 
@@ -134,7 +232,22 @@ resource "kubernetes_network_policy" "devops_demo_network_policy" {
       }
     }
 
-    policy_types = ["Ingress"]
+    egress {
+      to {
+        pod_selector {
+          match_labels = {
+            app = "postgres"
+          }
+        }
+      }
+
+      ports {
+        port     = "5432"
+        protocol = "TCP"
+      }
+    }
+
+    policy_types = ["Ingress", "Egress"]
   }
 }
 
@@ -150,15 +263,15 @@ resource "kubernetes_limit_range" "devops_demo_limits" {
       type = "Container"
       default = {
         cpu    = "200m"
-        memory = "128Mi"
+        memory = "256Mi"
       }
       default_request = {
         cpu    = "100m"
-        memory = "64Mi"
+        memory = "128Mi"
       }
       max = {
-        cpu    = "500m"
-        memory = "256Mi"
+        cpu    = "1"
+        memory = "512Mi"
       }
       min = {
         cpu    = "50m"
@@ -184,6 +297,8 @@ resource "kubernetes_config_map" "app_config" {
     LOG_LEVEL    = "info"
     API_PORT     = "3000"
     WEB_PORT     = "80"
+    DB_HOST      = "postgres"
+    DB_PORT      = "5432"
   }
 }
 
@@ -241,4 +356,9 @@ output "resource_quota" {
 output "config_map_name" {
   description = "Name of the application ConfigMap"
   value       = kubernetes_config_map.app_config.metadata[0].name
+}
+
+output "postgres_secret_name" {
+  description = "Name of the PostgreSQL secret"
+  value       = kubernetes_secret.postgres_secret.metadata[0].name
 }
