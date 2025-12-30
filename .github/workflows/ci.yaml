@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 env:
@@ -16,7 +16,7 @@ env:
 
 jobs:
   # ==================== CI PHASE ====================
-  
+
   # Job 1: Test and Lint API Service
   test-api:
     name: Test & Lint API Service
@@ -24,7 +24,7 @@ jobs:
     defaults:
       run:
         working-directory: ./api-service
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,8 +32,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: api-service/package-lock.json
 
       - name: Install dependencies
@@ -47,7 +47,7 @@ jobs:
 
       - name: Check dependency vulnerabilities
         run: npm audit --audit-level=high
-        continue-on-error: true  # Don't fail on audit issues, but report them
+        continue-on-error: true # Don't fail on audit issues, but report them
 
       - name: Upload test coverage
         uses: actions/upload-artifact@v4
@@ -63,7 +63,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
   validate-migrations:
     name: Validate SQL Migrations
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -135,11 +135,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     outputs:
       api-image-digest: ${{ steps.build-api.outputs.digest }}
       web-image-digest: ${{ steps.build-web.outputs.digest }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -208,13 +208,13 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    
+
     strategy:
       matrix:
         include:
           - service: api-service
           - service: web-service
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -230,29 +230,29 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
         continue-on-error: true
 
       - name: Run Trivy for JSON report
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
-          format: 'json'
-          exit-code: '0'
-          output: 'trivy-${{ matrix.service }}-report.json'
+          format: "json"
+          exit-code: "0"
+          output: "trivy-${{ matrix.service }}-report.json"
         continue-on-error: true
 
       - name: Upload Trivy JSON report
         uses: actions/upload-artifact@v4
         with:
           name: trivy-${{ matrix.service }}-report
-          path: 'trivy-${{ matrix.service }}-report.json'
+          path: "trivy-${{ matrix.service }}-report.json"
           retention-days: 30
 
   # ==================== CD PHASE ====================
-  
+
   # Job 6: Deploy to Kubernetes
   deploy-kubernetes:
     name: Deploy to Kubernetes
@@ -264,7 +264,7 @@ jobs:
       url: http://devops-demo.local
     env:
       KUBECONFIG: /home/misho/.kube/config
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -274,19 +274,32 @@ jobs:
           kubectl version --client
           kubectl cluster-info
 
-      - name: Build Docker images locally
+      - name: Build Docker images locally with unique tag
         run: |
-          docker build -t devops-demo/api-service:latest ./api-service
-          docker build -t devops-demo/web-service:latest ./web-service
+          # Use commit SHA for unique image tags
+          IMAGE_TAG="${GITHUB_SHA:0:7}-$(date +%s)"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+          docker build -t devops-demo/api-service:$IMAGE_TAG ./api-service
+          docker build -t devops-demo/web-service:$IMAGE_TAG ./web-service
+
+          # Also tag as latest for convenience
+          docker tag devops-demo/api-service:$IMAGE_TAG devops-demo/api-service:latest
+          docker tag devops-demo/web-service:$IMAGE_TAG devops-demo/web-service:latest
 
       - name: Import images to K3s
         run: |
-          # Save and import images to K3s containerd
+          # Save and import images to K3s containerd with unique tag
+          docker save devops-demo/api-service:$IMAGE_TAG | sudo k3s ctr images import -
+          docker save devops-demo/web-service:$IMAGE_TAG | sudo k3s ctr images import -
+
+          # Also import latest tags
           docker save devops-demo/api-service:latest | sudo k3s ctr images import -
           docker save devops-demo/web-service:latest | sudo k3s ctr images import -
-          
+
           # Verify images are available
           sudo k3s ctr images list | grep devops-demo
+          echo "✅ Images imported successfully!"
 
       - name: Create namespace if not exists
         run: |
@@ -297,46 +310,94 @@ jobs:
           echo "🗄️ Deploying PostgreSQL..."
           kubectl apply -f k8s/postgres-secret.yaml
           kubectl apply -f k8s/postgres-deployment.yaml
-          
+
           # Wait for PostgreSQL to be ready
           kubectl rollout status deployment/postgres -n devops-demo --timeout=120s
-          
+
           echo "✅ PostgreSQL deployed successfully!"
 
       - name: Run Flyway database migrations
         run: |
           echo "📊 Running database migrations..."
-          
+
           # Apply Flyway ConfigMap and Job
           kubectl apply -f k8s/flyway-configmap.yaml
-          
+
           # Delete previous job if exists
           kubectl delete job flyway-migrate -n devops-demo --ignore-not-found=true
-          
+
           # Run migration job
           kubectl apply -f k8s/flyway-job.yaml
-          
+
           # Wait for migration to complete
           kubectl wait --for=condition=complete job/flyway-migrate -n devops-demo --timeout=120s
-          
+
           echo "✅ Database migrations completed!"
 
-      - name: Apply Kubernetes manifests
+      - name: Apply base Kubernetes manifests
         run: |
           kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/api-deployment.yaml
           kubectl apply -f k8s/api-service.yaml
-          kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/web-service.yaml
           kubectl apply -f k8s/ingress.yaml
 
+      - name: Update API service image and rolling update
+        run: |
+          echo "🔄 Updating API service to version: $IMAGE_TAG"
+
+          # Set new image for API deployment
+          kubectl set image deployment/api-service \
+            api-service=devops-demo/api-service:$IMAGE_TAG \
+            -n devops-demo
+
+          # Annotate deployment to force update even if image is the same
+          kubectl annotate deployment/api-service \
+            kubernetes.io/change-cause="Deploy commit ${GITHUB_SHA:0:7} by ${GITHUB_ACTOR}" \
+            -n devops-demo --overwrite
+
+          # Add restart timestamp to ensure pods are recreated
+          kubectl patch deployment api-service -n devops-demo \
+            -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date -Iseconds)\"}}}}}"
+
+          echo "✅ API service image updated, rolling update initiated"
+
+      - name: Update Web service image and rolling update
+        run: |
+          echo "🔄 Updating Web service to version: $IMAGE_TAG"
+
+          # Set new image for Web deployment
+          kubectl set image deployment/web-service \
+            web-service=devops-demo/web-service:$IMAGE_TAG \
+            -n devops-demo
+
+          # Annotate deployment to force update
+          kubectl annotate deployment/web-service \
+            kubernetes.io/change-cause="Deploy commit ${GITHUB_SHA:0:7} by ${GITHUB_ACTOR}" \
+            -n devops-demo --overwrite
+
+          # Add restart timestamp to ensure pods are recreated
+          kubectl patch deployment web-service -n devops-demo \
+            -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date -Iseconds)\"}}}}}"
+
+          echo "✅ Web service image updated, rolling update initiated"
+
       - name: Wait for API deployment rollout
         run: |
+          echo "⏳ Waiting for API service rollout to complete..."
           kubectl rollout status deployment/api-service -n devops-demo --timeout=300s
+
+          # Verify new pods are running
+          echo "📊 API service pod status:"
+          kubectl get pods -n devops-demo -l app=api-service -o wide
 
       - name: Wait for Web deployment rollout
         run: |
+          echo "⏳ Waiting for Web service rollout to complete..."
           kubectl rollout status deployment/web-service -n devops-demo --timeout=300s
+
+          # Verify new pods are running
+          echo "📊 Web service pod status:"
+          kubectl get pods -n devops-demo -l app=web-service -o wide
 
       - name: Verify deployment
         run: |
@@ -344,36 +405,60 @@ jobs:
           kubectl get deployments -n devops-demo
           echo ""
           echo "=== Pods ==="
-          kubectl get pods -n devops-demo
+          kubectl get pods -n devops-demo -o wide
           echo ""
           echo "=== Services ==="
           kubectl get services -n devops-demo
           echo ""
           echo "=== Ingress ==="
           kubectl get ingress -n devops-demo
+          echo ""
+          echo "=== Deployment History ==="
+          echo "API Service:"
+          kubectl rollout history deployment/api-service -n devops-demo
+          echo ""
+          echo "Web Service:"
+          kubectl rollout history deployment/web-service -n devops-demo
 
       - name: Check pod health
         run: |
           # Wait a bit for pods to stabilize
-          sleep 10
-          
+          sleep 15
+
           # Get pod status
           API_PODS=$(kubectl get pods -n devops-demo -l app=api-service -o jsonpath='{.items[*].status.phase}')
           WEB_PODS=$(kubectl get pods -n devops-demo -l app=web-service -o jsonpath='{.items[*].status.phase}')
           DB_PODS=$(kubectl get pods -n devops-demo -l app=postgres -o jsonpath='{.items[*].status.phase}')
-          
+
           echo "API Pods Status: $API_PODS"
           echo "Web Pods Status: $WEB_PODS"
           echo "Database Pods Status: $DB_PODS"
-          
+
           # Check if all pods are running
           if [[ "$API_PODS" == *"Running"* ]] && [[ "$WEB_PODS" == *"Running"* ]] && [[ "$DB_PODS" == *"Running"* ]]; then
             echo "✅ All pods are running successfully!"
+            
+            # Show pod ages to confirm they were recently updated
+            echo ""
+            echo "📅 Pod ages (should show recent restart):"
+            kubectl get pods -n devops-demo -o custom-columns=NAME:.metadata.name,STATUS:.status.phase,AGE:.metadata.creationTimestamp
           else
             echo "❌ Some pods are not running properly"
             kubectl get pods -n devops-demo
+            kubectl describe pods -n devops-demo
             exit 1
           fi
+
+      - name: Cleanup old images from K3s
+        run: |
+          echo "🧹 Cleaning up old images..."
+          # List all devops-demo images
+          sudo k3s ctr images list | grep devops-demo || true
+
+          # Note: You can add pruning logic here if needed
+          # For now, we keep recent images for potential rollback
+          echo "✅ Image cleanup check completed"
+        continue-on-error: true
 
   # Job 7: End-to-End Tests
   e2e-tests:
@@ -383,7 +468,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     env:
       KUBECONFIG: /home/misho/.kube/config
-    
+
     steps:
       - name: Test API health endpoint
         run: |
@@ -391,7 +476,7 @@ jobs:
           API_POD=$(kubectl get pods -n devops-demo -l app=api-service -o jsonpath='{.items[0].metadata.name}')
           HEALTH=$(kubectl exec -n devops-demo $API_POD -- wget -qO- http://localhost:3000/health 2>/dev/null || echo '{"status":"error"}')
           echo "Health response: $HEALTH"
-          
+
           if echo "$HEALTH" | grep -q "healthy"; then
             echo "✅ API health check passed!"
           else
@@ -405,7 +490,7 @@ jobs:
           API_POD=$(kubectl get pods -n devops-demo -l app=api-service -o jsonpath='{.items[0].metadata.name}')
           HELLO=$(kubectl exec -n devops-demo $API_POD -- wget -qO- http://localhost:3000/api/hello 2>/dev/null || echo '{"message":"error"}')
           echo "Hello response: $HELLO"
-          
+
           if echo "$HELLO" | grep -q "Hello from the API"; then
             echo "✅ API hello endpoint passed!"
           else
@@ -419,7 +504,7 @@ jobs:
           API_POD=$(kubectl get pods -n devops-demo -l app=api-service -o jsonpath='{.items[0].metadata.name}')
           DB_INFO=$(kubectl exec -n devops-demo $API_POD -- wget -qO- http://localhost:3000/api/db-info 2>/dev/null || echo '{"connected":false}')
           echo "DB Info response: $DB_INFO"
-          
+
           if echo "$DB_INFO" | grep -q '"connected":true'; then
             echo "✅ Database connectivity test passed!"
           else
@@ -451,7 +536,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-kubernetes, e2e-tests]
     if: always()
-    
+
     steps:
       - name: Create deployment summary
         run: |
