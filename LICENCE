@@ -1,0 +1,34 @@
+Copyright (c) 2025 Mihail Dobroslavski
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+use, copy, modify, merge, publish, and distribute the Software, subject to
+the following conditions:
+
+1. Attribution
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+2. Modification Requirement for Academic Use
+   The Software MAY NOT be used, submitted, or redistributed as part of
+   academic coursework, assignments, or projects at Sofia University
+   "St. Kliment Ohridski" (or any of its faculties or courses), INCLUDING
+   the specific course for which this Software was originally developed,
+   IF the Software is used WITHOUT SIGNIFICANT MODIFICATION.
+
+   "Significant modification" means meaningful changes to the structure,
+   functionality, or implementation of the Software, beyond superficial
+   edits such as renaming variables, reformatting, or minor configuration
+   changes.
+
+3. Non-Endorsement
+   Use of the Software does not imply endorsement by the original author.
+
+4. No Warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
