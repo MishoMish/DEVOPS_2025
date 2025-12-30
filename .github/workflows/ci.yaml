@@ -345,9 +345,13 @@ jobs:
         run: |
           echo "🔄 Updating API service to version: $IMAGE_TAG"
 
-          # Set new image for API deployment
+          # First, check the actual container name in the deployment
+          CONTAINER_NAME=$(kubectl get deployment api-service -n devops-demo -o jsonpath='{.spec.template.spec.containers[0].name}')
+          echo "Container name in deployment: $CONTAINER_NAME"
+
+          # Set new image for API deployment using the actual container name
           kubectl set image deployment/api-service \
-            api-service=devops-demo/api-service:$IMAGE_TAG \
+            $CONTAINER_NAME=devops-demo/api-service:$IMAGE_TAG \
             -n devops-demo
 
           # Annotate deployment to force update even if image is the same
@@ -365,9 +369,13 @@ jobs:
         run: |
           echo "🔄 Updating Web service to version: $IMAGE_TAG"
 
-          # Set new image for Web deployment
+          # First, check the actual container name in the deployment
+          CONTAINER_NAME=$(kubectl get deployment web-service -n devops-demo -o jsonpath='{.spec.template.spec.containers[0].name}')
+          echo "Container name in deployment: $CONTAINER_NAME"
+
+          # Set new image for Web deployment using the actual container name
           kubectl set image deployment/web-service \
-            web-service=devops-demo/web-service:$IMAGE_TAG \
+            $CONTAINER_NAME=devops-demo/web-service:$IMAGE_TAG \
             -n devops-demo
 
           # Annotate deployment to force update
