@@ -218,7 +218,7 @@ jobs:
   # Job 5: Deploy to Kubernetes
   deploy-kubernetes:
     name: Deploy to Kubernetes
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, k8s]
     needs: [build-images, scan-images]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     environment:
@@ -229,34 +229,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-
-      # Configure kubectl with kubeconfig from secrets
-      - name: Configure kubectl
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      - name: Verify kubectl access
         run: |
-          mkdir -p $HOME/.kube
-          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          kubectl version --client
+          kubectl cluster-info
 
-      # Note: For Minikube, GitHub Actions won't be able to reach your local cluster
-      # This demonstrates the workflow - in production use cloud Kubernetes (AKS/EKS/GKE)
-      
+      - name: Build Docker images locally
+        run: |
+          docker build -t devops-demo/api-service:latest ./api-service
+          docker build -t devops-demo/web-service:latest ./web-service
+
+      - name: Import images to K3s
+        run: |
+          # Save and import images to K3s containerd
+          docker save devops-demo/api-service:latest | sudo k3s ctr images import -
+          docker save devops-demo/web-service:latest | sudo k3s ctr images import -
+          
+          # Verify images are available
+          sudo k3s ctr images list | grep devops-demo
+
       - name: Create namespace if not exists
         run: |
           kubectl get namespace devops-demo || kubectl create namespace devops-demo
-
-      - name: Update image tags in manifests
-        run: |
-          # Update API service image
-          sed -i "s|ghcr.io/YOUR_GITHUB_USERNAME/api-service:latest|${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}|g" k8s/api-deployment.yaml
-          
-          # Update Web service image
-          sed -i "s|ghcr.io/YOUR_GITHUB_USERNAME/web-service:latest|${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:${{ github.ref_name }}|g" k8s/web-deployment.yaml
 
       - name: Apply Kubernetes manifests
         run: |
