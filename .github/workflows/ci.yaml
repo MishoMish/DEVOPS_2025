@@ -337,7 +337,9 @@ jobs:
       - name: Apply base Kubernetes manifests
         run: |
           kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/api-deployment.yaml
           kubectl apply -f k8s/api-service.yaml
+          kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/web-service.yaml
           kubectl apply -f k8s/ingress.yaml
 
