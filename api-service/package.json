@@ -9,7 +9,12 @@
     "test:integration": "jest --testPathPattern=integration --runInBand",
     "lint": "eslint src/ tests/"
   },
-  "keywords": ["devops", "demo", "api", "postgresql"],
+  "keywords": [
+    "devops",
+    "demo",
+    "api",
+    "postgresql"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

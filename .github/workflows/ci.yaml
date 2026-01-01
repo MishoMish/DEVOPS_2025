@@ -325,31 +325,31 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           echo "🔐 Creating Kubernetes secrets from GitHub Secrets..."
-          
+
           # Use defaults if secrets are not set (for backward compatibility)
           DB_NAME="${DB_NAME:-devopsdb}"
           DB_USER="${DB_USER:-devops}"
           DB_PASSWORD="${DB_PASSWORD:-devops123}"
-          
+
           # Delete existing secret if exists
           kubectl delete secret postgres-secret -n devops-demo --ignore-not-found=true
-          
+
           # Create secret from GitHub Secrets
           kubectl create secret generic postgres-secret \
             --namespace=devops-demo \
             --from-literal=POSTGRES_DB="$DB_NAME" \
             --from-literal=POSTGRES_USER="$DB_USER" \
             --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD"
-          
+
           # Apply the ConfigMap (non-sensitive config)
           kubectl apply -f k8s/postgres-secret.yaml --selector='!type=Opaque' 2>/dev/null || true
-          
+
           # Create/update postgres-config ConfigMap
           kubectl create configmap postgres-config \
             --namespace=devops-demo \
             --from-literal=PGDATA=/var/lib/postgresql/data/pgdata \
             --dry-run=client -o yaml | kubectl apply -f -
-          
+
           echo "✅ Kubernetes secrets created from GitHub Secrets!"
 
       - name: Deploy PostgreSQL database
