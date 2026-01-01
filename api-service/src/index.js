@@ -8,12 +8,13 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // Database connection pool
+// Credentials should be provided via environment variables
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'devopsdb',
   user: process.env.DB_USER || 'devops',
-  password: process.env.DB_PASSWORD || 'devops123',
+  password: process.env.DB_PASSWORD, // No default - must be set via env
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

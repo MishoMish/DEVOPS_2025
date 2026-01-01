@@ -7,9 +7,9 @@ services:
     image: postgres:15-alpine
     container_name: devops-db
     environment:
-      POSTGRES_DB: devopsdb
-      POSTGRES_USER: devops
-      POSTGRES_PASSWORD: devops123
+      POSTGRES_DB: ${DB_NAME:-devopsdb}
+      POSTGRES_USER: ${DB_USER:-devops}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
       - "5432:5432"
     volumes:
@@ -30,9 +30,9 @@ services:
     container_name: devops-flyway
     command: migrate
     environment:
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/devopsdb
-      FLYWAY_USER: devops
-      FLYWAY_PASSWORD: devops123
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-devopsdb}
+      FLYWAY_USER: ${DB_USER:-devops}
+      FLYWAY_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       FLYWAY_BASELINE_ON_MIGRATE: "true"
     volumes:
       - ./db/migrations:/flyway/sql
@@ -51,13 +51,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=devopsdb
-      - DB_USER=devops
-      - DB_PASSWORD=devops123
+      - DB_NAME=${DB_NAME:-devopsdb}
+      - DB_USER=${DB_USER:-devops}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
     depends_on:
       flyway:
         condition: service_completed_successfully

@@ -85,14 +85,18 @@ jobs:
   validate-migrations:
     name: Validate SQL Migrations
     runs-on: ubuntu-latest
+    env:
+      DB_NAME: ${{ secrets.DB_NAME || 'devopsdb' }}
+      DB_USER: ${{ secrets.DB_USER || 'devops' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     services:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_DB: devopsdb
-          POSTGRES_USER: devops
-          POSTGRES_PASSWORD: devops123
+          POSTGRES_DB: ${{ secrets.DB_NAME || 'devopsdb' }}
+          POSTGRES_USER: ${{ secrets.DB_USER || 'devops' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
@@ -105,13 +109,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate secrets are set
+        run: |
+          if [ -z "${{ secrets.DB_PASSWORD }}" ]; then
+            echo "⚠️ Warning: DB_PASSWORD secret is not set. Using default for testing."
+            echo "DB_PASSWORD=devops123" >> $GITHUB_ENV
+            echo "DB_USER=devops" >> $GITHUB_ENV
+            echo "DB_NAME=devopsdb" >> $GITHUB_ENV
+          fi
+
       - name: Run Flyway migrations
         uses: docker://flyway/flyway:10-alpine
         with:
           args: >-
-            -url=jdbc:postgresql://postgres:5432/devopsdb
-            -user=devops
-            -password=devops123
+            -url=jdbc:postgresql://postgres:5432/${{ secrets.DB_NAME || 'devopsdb' }}
+            -user=${{ secrets.DB_USER || 'devops' }}
+            -password=${{ secrets.DB_PASSWORD || 'devops123' }}
             -locations=filesystem:./db/migrations
             -baselineOnMigrate=true
             -validateMigrationNaming=true
@@ -305,10 +318,43 @@ jobs:
         run: |
           kubectl get namespace devops-demo || kubectl create namespace devops-demo
 
+      - name: Create database secrets from GitHub Secrets
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "🔐 Creating Kubernetes secrets from GitHub Secrets..."
+          
+          # Use defaults if secrets are not set (for backward compatibility)
+          DB_NAME="${DB_NAME:-devopsdb}"
+          DB_USER="${DB_USER:-devops}"
+          DB_PASSWORD="${DB_PASSWORD:-devops123}"
+          
+          # Delete existing secret if exists
+          kubectl delete secret postgres-secret -n devops-demo --ignore-not-found=true
+          
+          # Create secret from GitHub Secrets
+          kubectl create secret generic postgres-secret \
+            --namespace=devops-demo \
+            --from-literal=POSTGRES_DB="$DB_NAME" \
+            --from-literal=POSTGRES_USER="$DB_USER" \
+            --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD"
+          
+          # Apply the ConfigMap (non-sensitive config)
+          kubectl apply -f k8s/postgres-secret.yaml --selector='!type=Opaque' 2>/dev/null || true
+          
+          # Create/update postgres-config ConfigMap
+          kubectl create configmap postgres-config \
+            --namespace=devops-demo \
+            --from-literal=PGDATA=/var/lib/postgresql/data/pgdata \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          echo "✅ Kubernetes secrets created from GitHub Secrets!"
+
       - name: Deploy PostgreSQL database
         run: |
           echo "🗄️ Deploying PostgreSQL..."
-          kubectl apply -f k8s/postgres-secret.yaml
           kubectl apply -f k8s/postgres-deployment.yaml
 
           # Wait for PostgreSQL to be ready
