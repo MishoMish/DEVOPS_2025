@@ -12,6 +12,7 @@ env:
   IMAGE_OWNER: mishomish
   API_IMAGE_NAME: mishomish/api-service
   WEB_IMAGE_NAME: mishomish/web-service
+  KUBECONFIG: /home/misho/.kube/config
 
 jobs:
   # ==================== CHANGE DETECTION ====================
@@ -369,23 +370,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup kubectl for K3s
-        run: |
-          # Copy K3s kubeconfig to user location if not already present
-          mkdir -p ~/.kube
-          if [ -f /etc/rancher/k3s/k3s.yaml ]; then
-            sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-            sudo chown $(id -u):$(id -g) ~/.kube/config
-            chmod 600 ~/.kube/config
-            export KUBECONFIG=~/.kube/config
-            echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
-            echo "✅ kubectl configured for K3s (user kubeconfig)"
-          else
-            echo "❌ K3s kubeconfig not found"
-            echo "Please ensure K3s is installed: curl -sfL https://get.k3s.io | sh -"
-            exit 1
-          fi
 
       - name: Verify kubectl access
         run: |
