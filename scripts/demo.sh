@@ -16,6 +16,10 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
+# Get the project root directory (script is in scripts/)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Function to print section headers
 print_header() {
     echo ""
@@ -326,25 +330,25 @@ clear
 print_header "📁 SECTION 10: Project Structure"
 
 print_subheader "Repository Structure"
+print_info "Project root: $PROJECT_ROOT"
+echo ""
 if command -v tree &> /dev/null; then
-    print_cmd "tree -L 2 --dirsfirst"
-    cd ~/actions-runner/_work/DEVOPS_2025/DEVOPS_2025 2>/dev/null || cd ~/DEVOPS 2>/dev/null || cd /home/misho/DEVOPS 2>/dev/null
-    tree -L 2 --dirsfirst 2>/dev/null || ls -la
+    print_cmd "tree -L 2 --dirsfirst $PROJECT_ROOT"
+    tree -L 2 --dirsfirst "$PROJECT_ROOT"
 else
-    print_cmd "ls -la"
-    cd ~/actions-runner/_work/DEVOPS_2025/DEVOPS_2025 2>/dev/null || cd ~/DEVOPS 2>/dev/null || cd /home/misho/DEVOPS 2>/dev/null
-    ls -la 2>/dev/null || echo "(Could not find project directory)"
+    print_cmd "ls -la $PROJECT_ROOT"
+    ls -la "$PROJECT_ROOT"
 fi
 wait_for_key
 
 print_subheader "Kubernetes Manifests"
-print_cmd "ls -la k8s/"
-ls -la k8s/ 2>/dev/null || echo "(k8s directory not found in current path)"
+print_cmd "ls -la $PROJECT_ROOT/k8s/"
+ls -la "$PROJECT_ROOT/k8s/"
 wait_for_key
 
 print_subheader "Database Migrations"
-print_cmd "ls -la db/migrations/"
-ls -la db/migrations/ 2>/dev/null || echo "(db/migrations directory not found)"
+print_cmd "ls -la $PROJECT_ROOT/db/migrations/"
+ls -la "$PROJECT_ROOT/db/migrations/"
 wait_for_key
 
 clear
