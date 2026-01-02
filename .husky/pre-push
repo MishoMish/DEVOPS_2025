@@ -1,7 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # ===========================================
 # Pre-Push Hook - Full validation before push
 # ===========================================
+
+# Load NVM if available
+[ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
 
 echo "🚀 Running pre-push checks..."
 echo ""

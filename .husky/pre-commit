@@ -1,7 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # ===========================================
 # Pre-Commit Hook - Lint all staged file types
 # ===========================================
+
+# Load NVM if available
+[ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
 
 echo "🔍 Running pre-commit checks..."
 echo ""
