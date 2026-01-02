@@ -1,47 +1,21 @@
 #!/bin/sh
 # ===========================================
-# Pre-Push Hook - Runs before each push
+# Pre-Push Hook - Full validation before push
 # ===========================================
-# This hook runs comprehensive checks before pushing to remote.
-# If any check fails, the push will be aborted.
 
 echo "🚀 Running pre-push checks..."
 echo ""
 
-# Track if any check fails
-FAILED=0
-
 # ===========================================
-# Step 0: Validate Branch Naming Convention
+# Step 0/4: Validate Branch Naming Convention
 # ===========================================
-# Allowed patterns:
-#   - feature/<number>-description (e.g., feature/123-add-login)
-#   - feat/<number>-description
-#   - fix/<number>-description
-#   - bugfix/<number>-description
-#   - hotfix/<number>-description
-#   - chore/<number>-description
-#   - docs/<number>-description
-#   - refactor/<number>-description
-#   - test/<number>-description
-#   - style/<number>-description
-#   - perf/<number>-description
-#   - ci/<number>-description
-#   - main, master, develop (protected branches - allowed)
-# ===========================================
-
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-
 echo "🌿 Step 0/4: Validating branch name: '$BRANCH_NAME'"
 
 # Allow main branches without restrictions
 if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ] || [ "$BRANCH_NAME" = "develop" ]; then
   echo "✅ Protected branch '$BRANCH_NAME' - naming check skipped"
 else
-  # Pattern: type/number-description
-  # - type: feature|feat|fix|bugfix|hotfix|chore|docs|refactor|test|style|perf|ci
-  # - number: one or more digits (task/issue number)
-  # - description: lowercase letters, numbers, and hyphens
   VALID_PATTERN="^(feature|feat|fix|bugfix|hotfix|chore|docs|refactor|test|style|perf|ci)/[0-9]+-[a-z0-9-]+$"
   
   if echo "$BRANCH_NAME" | grep -Eq "$VALID_PATTERN"; then
@@ -50,20 +24,8 @@ else
     echo ""
     echo "❌ Invalid branch name: '$BRANCH_NAME'"
     echo ""
-    echo "Branch names must follow this pattern:"
-    echo "  <type>/<task-number>-<description>"
-    echo ""
-    echo "Allowed types:"
-    echo "  feature, feat, fix, bugfix, hotfix, chore,"
-    echo "  docs, refactor, test, style, perf, ci"
-    echo ""
-    echo "Examples:"
-    echo "  feature/123-add-user-login"
-    echo "  fix/456-resolve-memory-leak"
-    echo "  chore/789-update-dependencies"
-    echo "  docs/101-update-readme"
-    echo ""
-    echo "The number should reference your task/issue number."
+    echo "Branch names must follow: <type>/<task-number>-<description>"
+    echo "Examples: feature/123-add-login, fix/456-memory-leak"
     echo ""
     exit 1
   fi
@@ -73,51 +35,52 @@ echo ""
 # Navigate to api-service directory
 cd api-service
 
-# 1. Run full linting
+# Ensure dependencies are installed
+if [ ! -d "node_modules" ]; then
+  echo "📦 Installing dependencies..."
+  npm ci --silent
+fi
+
+# ===========================================
+# Step 1/4: Run full linting
+# ===========================================
 echo "📝 Step 1/4: Running full lint check..."
 npm run lint
 if [ $? -ne 0 ]; then
   echo "❌ Linting failed!"
-  FAILED=1
-else
-  echo "✅ Linting passed!"
-fi
-echo ""
-
-# 2. Run unit tests
-echo "🧪 Step 2/4: Running unit tests..."
-npm test -- --passWithNoTests --coverage=false 2>/dev/null
-if [ $? -ne 0 ]; then
-  echo "❌ Unit tests failed!"
-  FAILED=1
-else
-  echo "✅ Unit tests passed!"
-fi
-echo ""
-
-# 3. Check for security vulnerabilities
-echo "🔒 Step 3/4: Checking for security vulnerabilities..."
-npm audit --audit-level=high 2>/dev/null
-if [ $? -ne 0 ]; then
-  echo "⚠️  Security vulnerabilities found (high severity)!"
-  echo "💡 Tip: Run 'npm audit fix' to fix them."
-  FAILED=1
-else
-  echo "✅ No high severity vulnerabilities!"
-fi
-echo ""
-
-cd ..
-
-# Final result
-if [ $FAILED -ne 0 ]; then
-  echo "============================================"
-  echo "❌ Pre-push checks FAILED!"
-  echo "Please fix the issues above before pushing."
-  echo "============================================"
   exit 1
 fi
+echo "✅ Linting passed!"
+echo ""
 
+# ===========================================
+# Step 2/4: Run unit tests
+# ===========================================
+echo "🧪 Step 2/4: Running unit tests..."
+npm test -- --passWithNoTests --coverage=false
+if [ $? -ne 0 ]; then
+  echo "❌ Unit tests failed!"
+  exit 1
+fi
+echo "✅ Unit tests passed!"
+echo ""
+
+# ===========================================
+# Step 3/4: Check for security vulnerabilities
+# ===========================================
+echo "🔒 Step 3/4: Checking for security vulnerabilities..."
+npm audit --audit-level=high
+if [ $? -ne 0 ]; then
+  echo "⚠️  Security vulnerabilities found!"
+  echo "💡 Run 'npm audit fix' to fix them."
+  exit 1
+fi
+echo "✅ No high severity vulnerabilities!"
+echo ""
+
+# ===========================================
+# Step 4/4: Done
+# ===========================================
 echo "============================================"
 echo "✅ All pre-push checks passed!"
 echo "🚀 Pushing to remote..."

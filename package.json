@@ -1,0 +1,20 @@
+{
+  "name": "devops-project",
+  "version": "1.0.0",
+  "description": "DevOps Final Project - Complete CI/CD Pipeline with Kubernetes",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "cd api-service && npm run lint",
+    "test": "cd api-service && npm test",
+    "lint:web": "cd web-service && npx htmlhint index.html",
+    "local-ci": "./scripts/local-ci.sh",
+    "demo": "./scripts/demo.sh"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

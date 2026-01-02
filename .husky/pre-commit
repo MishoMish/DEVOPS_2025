@@ -1,33 +1,35 @@
 #!/bin/sh
 # ===========================================
-# Pre-Commit Hook - Runs before each commit
+# Pre-Commit Hook - Quick lint on staged files
 # ===========================================
-# This hook runs linting on staged files to catch issues early.
-# If linting fails, the commit will be aborted.
 
 echo "🔍 Running pre-commit checks..."
+echo ""
 
-# Navigate to api-service directory
-cd api-service
+# Get staged JS files in api-service
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep '^api-service/.*\.js$' | sed 's|^api-service/||' || true)
 
-# Run ESLint on staged JavaScript files only
-echo "📝 Linting staged files..."
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' | grep '^api-service/' | sed 's|^api-service/||')
-
-if [ -n "$STAGED_FILES" ]; then
-  npx eslint $STAGED_FILES
-  LINT_EXIT_CODE=$?
-  
-  if [ $LINT_EXIT_CODE -ne 0 ]; then
-    echo ""
-    echo "❌ Linting failed! Please fix the errors above before committing."
-    echo "💡 Tip: Run 'npm run lint -- --fix' to auto-fix some issues."
-    exit 1
-  fi
-  echo "✅ Linting passed!"
-else
-  echo "ℹ️  No JavaScript files to lint."
+if [ -z "$STAGED_JS" ]; then
+  echo "✅ No JavaScript files staged, skipping lint."
+  exit 0
 fi
 
-cd ..
-echo "✅ Pre-commit checks passed!"
+cd api-service
+
+# Ensure dependencies are installed
+if [ ! -d "node_modules" ]; then
+  echo "📦 Installing dependencies..."
+  npm ci --silent
+fi
+
+# Run ESLint on staged files only
+echo "📝 Linting staged files..."
+npx eslint $STAGED_JS
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Lint failed! Fix the errors above before committing."
+  exit 1
+fi
+
+echo "✅ Lint passed!"
