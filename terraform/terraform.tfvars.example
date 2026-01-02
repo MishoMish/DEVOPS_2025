@@ -2,13 +2,12 @@
 # Copy this file to terraform.tfvars and customize the values
 
 # kubeconfig_path = "~/.kube/config"
-# kube_context    = "minikube"  # or "docker-desktop", "aks-cluster", etc.
+# kube_context    = "minikube"  # or "docker-desktop", "k3s", etc.
 # namespace       = "devops-demo"
 
 # GitHub Container Registry images
-# Replace YOUR_GITHUB_USERNAME with your actual GitHub username
-# api_image = "ghcr.io/YOUR_GITHUB_USERNAME/api-service:latest"
-# web_image = "ghcr.io/YOUR_GITHUB_USERNAME/web-service:latest"
+# api_image = "ghcr.io/mishomish/api-service:latest"
+# web_image = "ghcr.io/mishomish/web-service:latest"
 
 # Uncomment if using private registry
 # github_username = "your-github-username"

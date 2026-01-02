@@ -1,6 +1,33 @@
 #!/bin/sh
-# Quick Test Script - Shows the project is working
-# Run this to demonstrate code quality
+# ===========================================
+# QUICK TEST SCRIPT - Project Validation Demo
+# ===========================================
+# 
+# USE CASE:
+# - Demonstrates that the project is working correctly
+# - Validates code quality and project structure
+# - Quick validation for presentations and demos
+# - Verifies development environment setup
+#
+# WHEN TO USE:
+# - Before project presentations or demos
+# - After setting up a new development environment
+# - To validate project health quickly
+# - During code reviews to show working state
+#
+# VALIDATES:
+# - Node.js and npm installation
+# - API service unit tests
+# - Code linting (ESLint)
+# - Project file structure
+# - Development dependencies
+#
+# REFERENCED IN:
+# - Self-referencing (counts script files)
+# - No external file references (standalone demo script)
+#
+# USAGE: ./scripts/quick-test.sh
+# ===========================================
 
 echo "╔═══════════════════════════════════════════════════════╗"
 echo "║                                                       ║"
@@ -13,8 +40,9 @@ echo ""
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-# Navigate to project
-cd /home/mishomish/Documents/DEVOPS
+# Navigate to project root
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+cd "$REPO_ROOT"
 
 echo "📍 Project Location: $(pwd)"
 echo ""
@@ -79,8 +107,8 @@ echo ""
 
 echo "📄 Checking key files..."
 check_file "README.md"
-check_file "PRESENTATION.md"
-check_file "ARCHITECTURE.md"
+check_file "docs/PRESENTATION.md"
+check_file "docs/ARCHITECTURE.md"
 check_file "docker-compose.yml"
 check_file ".github/workflows/ci.yaml"
 echo ""
@@ -130,10 +158,7 @@ echo ""
 echo "🎯 Project Status: READY FOR PRESENTATION"
 echo ""
 echo "📋 Next Steps:"
-echo "   1. Review PRESENTATION.md for your demo script"
-echo "   2. Study ARCHITECTURE.md for diagrams"
-echo "   3. Read INSTALLATION-REPORT.md for test results"
-echo "   4. Practice your 12-15 minute presentation"
+echo "   1. Study docs/ARCHITECTURE.md for diagrams"
 echo ""
 echo "🎓 You're ready to present! Good luck! 🚀"
 echo ""

@@ -1,6 +1,34 @@
 #!/bin/sh
-# Quick test script to verify deployment
-# Usage: ./scripts/test.sh
+# ===========================================
+# TEST SCRIPT - Deployment Verification
+# ===========================================
+# 
+# USE CASE:
+# - Verifies that Kubernetes deployment is working correctly
+# - Tests service connectivity and health endpoints
+# - Validates pod status and service availability
+# - End-to-end deployment testing
+#
+# WHEN TO USE:
+# - After deployment to verify services are running
+# - During troubleshooting deployment issues
+# - For integration testing in CI/CD pipelines
+# - Manual verification after configuration changes
+#
+# TESTS:
+# - API service pod health and endpoints
+# - Web service pod status and connectivity
+# - Service-to-service communication
+# - Ingress configuration and routing
+# - Overall deployment health
+#
+# REFERENCED IN:
+# - README.md (project structure section)
+# - validate.sh (as part of script validation)
+# - Deployment verification workflows
+#
+# USAGE: ./scripts/test.sh
+# ===========================================
 
 NAMESPACE="devops-demo"
 

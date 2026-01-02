@@ -1,11 +1,33 @@
 #!/bin/bash
 # ===========================================
-# Local CI - Run All CI Checks Locally
+# LOCAL CI SCRIPT - Pre-Push CI Validation
 # ===========================================
-# This script mimics what the GitHub Actions CI pipeline does,
-# allowing you to catch issues before pushing.
+# 
+# USE CASE:
+# - Runs complete CI pipeline locally before pushing to remote
+# - Mimics GitHub Actions CI workflow for early issue detection
+# - Validates code quality, security, and build integrity
+# - Prevents CI failures by catching issues locally
 #
-# Usage: ./scripts/local-ci.sh
+# WHEN TO USE:
+# - Before pushing code to remote repositories
+# - During development to validate changes
+# - As part of pre-commit/pre-push hooks
+# - For local validation without using CI/CD resources
+#
+# INCLUDES:
+# - ESLint code linting
+# - Unit test execution
+# - Security vulnerability scanning
+# - Docker image building
+# - Build validation
+#
+# REFERENCED IN:
+# - Development workflow documentation
+# - Git hooks for automated validation
+# - No direct file references (standalone utility)
+#
+# USAGE: ./scripts/local-ci.sh
 # ===========================================
 
 set -e

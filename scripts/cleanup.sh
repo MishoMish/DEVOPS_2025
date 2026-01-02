@@ -1,6 +1,26 @@
 #!/bin/sh
-# Cleanup script for Kubernetes resources
-# Usage: ./scripts/cleanup.sh [namespace]
+# ===========================================
+# CLEANUP SCRIPT - Kubernetes Resource Cleanup
+# ===========================================
+# 
+# USE CASE: 
+# - Removes all Kubernetes resources from a specified namespace
+# - Used for cleaning up after development, testing, or demos
+# - Interactive safety prompts to prevent accidental deletion
+#
+# WHEN TO USE:
+# - After completing development work
+# - Before redeploying fresh environments
+# - During environment teardown
+# - For demo cleanup after presentations
+#
+# REFERENCED IN:
+# - README.md (project structure section)
+# - validate.sh (as part of script validation)
+#
+# USAGE: ./scripts/cleanup.sh [namespace]
+# EXAMPLE: ./scripts/cleanup.sh devops-demo
+# ===========================================
 
 NAMESPACE=${1:-devops-demo}
 

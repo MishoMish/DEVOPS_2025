@@ -1,6 +1,27 @@
 #!/bin/sh
-# Deployment script for Kubernetes
-# Usage: ./scripts/deploy.sh [namespace]
+# ===========================================
+# DEPLOYMENT SCRIPT - Kubernetes Deployment Automation
+# ===========================================
+# 
+# USE CASE:
+# - Automated deployment of the complete application stack to Kubernetes
+# - Handles namespace creation, service deployment, and readiness checks
+# - Production-ready deployment with connectivity validation
+#
+# WHEN TO USE:
+# - Initial deployment to a new environment
+# - Redeployment after infrastructure changes
+# - Automated deployment from CI/CD pipelines
+# - Manual deployments during development
+#
+# REFERENCED IN:
+# - README.md (project structure section)
+# - validate.sh (as part of script validation)
+# - CI/CD workflows (automated deployment)
+#
+# USAGE: ./scripts/deploy.sh [namespace]
+# EXAMPLE: ./scripts/deploy.sh production
+# ===========================================
 
 NAMESPACE=${1:-devops-demo}
 

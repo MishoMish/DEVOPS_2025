@@ -20,12 +20,12 @@ Use this checklist to ensure your project meets all requirements and you're read
 | Pipeline starts with Git repository | ✅ | GitHub repo with `.github/workflows/ci.yaml` |
 | Continuous Integration | ✅ | Tests, linting, SAST in pipeline |
 | Deploy to Kubernetes | ✅ | Self-hosted runner deploys to K3s on VM |
-| At least 7 topics covered | ✅ | **11 topics covered** (see below) |
+| At least 7 topics covered | ✅ | **12 topics covered** (see below) |
 | T-shaped or E-shaped solution | ✅ | Horizontal + Security deep dive |
 | Solution as code | ✅ | All infrastructure and configs as code |
 | Documentation included | ✅ | README, ARCHITECTURE, SECURITY-DEEP-DIVE, etc. |
 
-## 📊 Topics Covered (11 of 12 possible)
+## 📊 Topics Covered (12 of 12)
 
 | # | Topic | Covered | Implementation |
 |---|-------|---------|----------------|

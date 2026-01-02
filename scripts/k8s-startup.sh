@@ -1,13 +1,40 @@
 #!/bin/bash
-# K8s Startup Script for DevOps Demo
-# This script ensures all services are running after VM reboot
-# Can be added to crontab: @reboot /path/to/k8s-startup.sh
+# ===========================================
+# K8S STARTUP SCRIPT - Service Health & Recovery
+# ===========================================
+# 
+# USE CASE:
+# - Ensures all Kubernetes services are healthy after system startup
+# - Automatically restarts failed deployments
+# - Designed for VM reboots and service recovery
+# - Health monitoring and automatic remediation
+#
+# WHEN TO USE:
+# - After VM or server reboots
+# - As a cron job for automatic service recovery
+# - For monitoring service health in production
+# - During troubleshooting deployment issues
+#
+# CRON SETUP:
+# Add to crontab: @reboot /home/mishomish/Documents/DEVOPS/scripts/k8s-startup.sh
+#
+# REFERENCED IN:
+# - Self-documented for cron usage
+# - Used for production service monitoring
+# - No direct file references (standalone utility)
+#
+# USAGE: ./scripts/k8s-startup.sh
+# ===========================================
 
 set -e
 
 NAMESPACE="devops-demo"
-KUBECONFIG="${KUBECONFIG:-/home/misho/.kube/config}"
+KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
 export KUBECONFIG
+
+# Get script directory for relative paths
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 
 echo "🚀 Starting K8s services health check..."
 
@@ -24,7 +51,7 @@ kubectl get namespace $NAMESPACE &>/dev/null || kubectl create namespace $NAMESP
 
 # Apply secrets and configs first (required by other deployments)
 echo "📦 Applying secrets and configs..."
-kubectl apply -f /home/misho/actions-runner/_work/DEVOPS_2025/DEVOPS_2025/k8s/postgres-secret.yaml 2>/dev/null || true
+kubectl apply -f "$REPO_ROOT/k8s/postgres-secret.yaml" 2>/dev/null || true
 
 # Check if PostgreSQL is running
 echo "🗄️ Checking PostgreSQL..."

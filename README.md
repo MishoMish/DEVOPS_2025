@@ -59,8 +59,8 @@ The project consists of microservices with database integration designed to show
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         INGRESS (Nginx)                         │
-│                    devops-demo.local                            │
+│                      INGRESS (Traefik - K3s)                    │
+│                       devops-demo.local                         │
 └────────────────┬────────────────────────────────────────────────┘
                  │
         ┌────────┴────────┐
@@ -746,18 +746,19 @@ Go to **Settings → Secrets and variables → Actions** and add:
 - `DOCKER_USERNAME`
 - `DOCKER_PASSWORD`
 
-### 3. Update Image Names
+### 3. Image Configuration
 
-Edit these files and replace `YOUR_GITHUB_USERNAME` with your actual username:
+The project uses local images for K3s deployment. Images are built and imported directly to K3s containerd:
 
 ```bash
-# In k8s/api-deployment.yaml
-image: ghcr.io/YOUR_USERNAME/api-service:latest
+# For local K3s deployment (no registry needed):
+# Images are built locally and imported via:
+docker build -t devops-demo/api-service:latest ./api-service
+docker build -t devops-demo/web-service:latest ./web-service
+docker save devops-demo/api-service:latest | sudo k3s ctr images import -
+docker save devops-demo/web-service:latest | sudo k3s ctr images import -
 
-# In k8s/web-deployment.yaml
-image: ghcr.io/YOUR_USERNAME/web-service:latest
-
-# In .github/workflows/ci.yaml (already uses github.repository_owner)
+# The k8s manifests use imagePullPolicy: Never for local images
 ```
 
 ### 4. Enable GitHub Packages

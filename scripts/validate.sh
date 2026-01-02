@@ -1,8 +1,38 @@
 #!/bin/sh
-# Project Validation Script
-# Validates the DevOps project structure and files
+# ===========================================
+# VALIDATE SCRIPT - Project Structure Validation
+# ===========================================
+# 
+# USE CASE:
+# - Comprehensive validation of project structure and files
+# - Ensures all required components are present
+# - Validates Kubernetes manifests and configurations
+# - Project readiness assessment for presentations
+#
+# WHEN TO USE:
+# - Before project presentations or demos
+# - After major project structure changes
+# - For project completeness verification
+# - During code reviews and quality checks
+#
+# VALIDATES:
+# - Directory structure completeness
+# - Essential project files presence
+# - Kubernetes manifest syntax
+# - CI/CD pipeline configuration
+# - Documentation files
+# - Script file availability
+#
+# REFERENCES:
+# - setup.sh, deploy.sh, cleanup.sh, test.sh (validates these scripts)
+# - All major project directories and files
+# - GitHub Actions workflow configuration
+#
+# USAGE: ./scripts/validate.sh
+# ===========================================
 
-cd /home/mishomish/Documents/DEVOPS
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+cd "$REPO_ROOT"
 
 echo "🔍 DevOps Project Validation"
 echo "=============================="
@@ -15,7 +45,7 @@ BLUE="📋"
 
 # Check directories
 echo "$BLUE Checking directory structure..."
-DIRS="api-service web-service k8s terraform .github/workflows scripts"
+DIRS="api-service web-service k8s terraform .github/workflows scripts docs"
 for dir in $DIRS; do
   if [ -d "$dir" ]; then
     echo "  $GREEN $dir/"
@@ -26,8 +56,19 @@ done
 
 echo ""
 echo "$BLUE Checking root files..."
-FILES="README.md QUICKSTART.md ARCHITECTURE.md TESTING.md .gitignore"
+FILES="README.md .gitignore docker-compose.yml"
 for file in $FILES; do
+  if [ -f "$file" ]; then
+    echo "  $GREEN $file"
+  else
+    echo "  $RED $file MISSING"
+  fi
+done
+
+echo ""
+echo "$BLUE Checking documentation files..."
+DOCS="docs/ARCHITECTURE.md docs/TESTING.md docs/PRESENTATION.md docs/SECURITY-DEEP-DIVE.md docs/BRANCHING-STRATEGY.md docs/EXAM-CHECKLIST.md"
+for file in $DOCS; do
   if [ -f "$file" ]; then
     echo "  $GREEN $file"
   else
@@ -197,18 +238,20 @@ echo ""
 
 # Count DevOps topics
 echo "📚 DevOps Topics Covered:"
-echo "  1. Source Control (Git)"
-echo "  2. Continuous Integration (CI)"
-echo "  3. Continuous Delivery (CD)"
-echo "  4. Security (SAST + Trivy)"
-echo "  5. Docker (Containerization)"
-echo "  6. Kubernetes (Orchestration)"
-echo "  7. Infrastructure as Code (Terraform)"
-echo "  8. Building Pipelines (GitHub Actions)"
-echo "  9. Collaboration (PR workflows)"
-echo "  10. SDLC Automation (Full lifecycle)"
+echo "  1. Phases of SDLC (Full lifecycle)"
+echo "  2. Collaborate (PR templates, CODEOWNERS)"
+echo "  3. Source Control (Git)"
+echo "  4. Branching Strategies (GitHub Flow)"
+echo "  5. Building Pipelines (GitHub Actions)"
+echo "  6. Continuous Integration (CI)"
+echo "  7. Continuous Delivery (CD)"
+echo "  8. Security (SAST + Trivy) - DEEP DIVE"
+echo "  9. Docker (Containerization)"
+echo "  10. Kubernetes (Orchestration)"
+echo "  11. Infrastructure as Code (Terraform)"
+echo "  12. Database Changes (PostgreSQL + Flyway)"
 echo ""
-echo "$GREEN Total: 10/7 required topics ✨"
+echo "$GREEN Total: 12/7 required topics ✨"
 echo ""
 
 # Deep dive check

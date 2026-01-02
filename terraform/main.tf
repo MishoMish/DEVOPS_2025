@@ -42,13 +42,13 @@ variable "namespace" {
 variable "api_image" {
   description = "API service Docker image"
   type        = string
-  default     = "ghcr.io/YOUR_GITHUB_USERNAME/api-service:latest"
+  default     = "ghcr.io/mishomish/api-service:latest"
 }
 
 variable "web_image" {
   description = "Web service Docker image"
   type        = string
-  default     = "ghcr.io/YOUR_GITHUB_USERNAME/web-service:latest"
+  default     = "ghcr.io/mishomish/web-service:latest"
 }
 
 # Database variables

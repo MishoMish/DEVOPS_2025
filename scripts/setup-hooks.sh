@@ -1,11 +1,32 @@
 #!/bin/bash
 # ===========================================
-# Setup Git Hooks for Local Development
+# SETUP HOOKS SCRIPT - Git Hook Configuration
 # ===========================================
-# Run this script once after cloning the repository
-# to enable pre-commit and pre-push hooks.
+# 
+# USE CASE:
+# - Configures Git hooks for automated code quality checks
+# - Sets up pre-commit and pre-push validation
+# - Installs development dependencies
+# - One-time setup after repository cloning
 #
-# Usage: ./scripts/setup-hooks.sh
+# WHEN TO USE:
+# - Once after cloning the repository
+# - When setting up a new development environment
+# - After updating hook configurations
+# - For team onboarding and development setup
+#
+# CONFIGURES:
+# - Pre-commit hook (ESLint on staged files)
+# - Pre-push hook (full CI validation)
+# - Git hook path configuration
+# - npm dependencies installation
+#
+# REFERENCED IN:
+# - .husky/pre-commit (installed hooks)
+# - .husky/pre-push (installed hooks)
+# - Development setup documentation
+#
+# USAGE: ./scripts/setup-hooks.sh
 # ===========================================
 
 set -e

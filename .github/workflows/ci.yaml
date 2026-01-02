@@ -275,8 +275,6 @@ jobs:
     environment:
       name: production
       url: http://devops-demo.local
-    env:
-      KUBECONFIG: /home/misho/.kube/config
 
     steps:
       - name: Checkout code
@@ -522,8 +520,6 @@ jobs:
     runs-on: [self-hosted, k8s]
     needs: deploy-kubernetes
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    env:
-      KUBECONFIG: /home/misho/.kube/config
 
     steps:
       - name: Test API health endpoint

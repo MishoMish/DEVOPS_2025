@@ -1,3 +1,40 @@
+#!/bin/bash
+# ===========================================
+# SETUP SCRIPT - Local Development Environment
+# ===========================================
+# 
+# USE CASE:
+# - Complete local development environment setup
+# - Validates prerequisites and dependencies
+# - Builds Docker images and installs npm packages
+# - Provides step-by-step setup instructions
+#
+# WHEN TO USE:
+# - Initial project setup after cloning
+# - Setting up new development environments
+# - After major dependency or infrastructure changes
+# - For team onboarding and local development
+#
+# VALIDATES:
+# - Docker installation and availability
+# - kubectl CLI tool presence
+# - Node.js runtime environment
+# - Kubernetes cluster connectivity
+#
+# SETS UP:
+# - npm dependencies installation
+# - Unit test execution
+# - Docker image building
+# - Development environment validation
+#
+# REFERENCED IN:
+# - README.md (project structure section)
+# - validate.sh (as part of script validation)
+# - Development documentation
+#
+# USAGE: ./scripts/setup.sh
+# ===========================================
+#
 # Local Development Setup Script
 # This script helps set up the local development environment
 
