@@ -246,27 +246,34 @@ Even if one layer misses something, others provide backup protection.
 
 ## 4️⃣ FUTURE IMPROVEMENTS (2 minutes)
 
+### ✅ Recently Implemented: Path-Based Filtering
+
+> "The pipeline now uses **intelligent change detection** - it only builds and deploys components that actually changed."
+
+| Component | Trigger Condition |
+|-----------|-------------------|
+| API Service | Only when `api-service/**` files change |
+| Web Service | Only when `web-service/**` files change |
+| Database | Only when `db/**` files change (Flyway handles idempotency) |
+| K8s Manifests | Only when `k8s/**` files change |
+
+**Benefits**:
+- ⚡ **Faster deployments** - Skip unchanged components
+- 💰 **Resource savings** - Less CI/CD compute time
+- 🎯 **Precise updates** - Only touch what needs updating
+- 🔄 **Still runs all** - Manual trigger or workflow changes run everything
+
 ### What Could Be Added Next
 
-```
-SHORT-TERM:
-├── GitOps with ArgoCD
-│   └── Declarative CD, automatic drift detection
-├── Helm Charts
-│   └── Package application for easier distribution
-└── Monitoring Stack
-    └── Prometheus + Grafana for observability
-
-LONG-TERM:
-├── Service Mesh (Istio)
-│   └── mTLS, traffic management, circuit breakers
-├── Multi-Environment Pipeline
-│   └── Dev → Staging → Production
-├── Advanced Security
-│   └── Image signing (Cosign), runtime security (Falco)
-└── Horizontal Pod Autoscaling
-    └── Auto-scale based on load
-```
+| Timeframe | Improvement | Benefit |
+|-----------|-------------|---------|
+| **SHORT-TERM** | GitOps with ArgoCD | Declarative CD, automatic drift detection |
+| | Helm Charts | Package application for easier distribution |
+| | Monitoring Stack | Prometheus + Grafana for observability |
+| **LONG-TERM** | Service Mesh (Istio) | mTLS, traffic management, circuit breakers |
+| | Multi-Environment Pipeline | Dev → Staging → Production |
+| | Advanced Security | Image signing (Cosign), runtime security (Falco) |
+| | Horizontal Pod Autoscaling | Auto-scale based on load |
 
 ### Why Not Implemented?
 

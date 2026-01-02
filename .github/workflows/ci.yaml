@@ -15,12 +15,58 @@ env:
   KUBECONFIG: ${{ github.runner.workspace }}/.kube/config
 
 jobs:
+  # ==================== CHANGE DETECTION ====================
+  
+  # Detect which parts of the codebase changed
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      db: ${{ steps.filter.outputs.db }}
+      k8s: ${{ steps.filter.outputs.k8s }}
+      workflow: ${{ steps.filter.outputs.workflow }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api-service/**'
+            web:
+              - 'web-service/**'
+            db:
+              - 'db/**'
+            k8s:
+              - 'k8s/**'
+            workflow:
+              - '.github/workflows/**'
+
+      - name: Summary of changes
+        run: |
+          echo "## 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Changed |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API Service | ${{ steps.filter.outputs.api }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web Service | ${{ steps.filter.outputs.web }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database | ${{ steps.filter.outputs.db }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| K8s Manifests | ${{ steps.filter.outputs.k8s }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | ${{ steps.filter.outputs.workflow }} |" >> $GITHUB_STEP_SUMMARY
+
   # ==================== CI PHASE ====================
 
-  # Job 1: Test and Lint API Service
+  # Job 1: Test and Lint API Service (only if api-service changed)
   test-api:
     name: Test & Lint API Service
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: ./api-service
@@ -56,10 +102,12 @@ jobs:
           path: api-service/coverage/
           retention-days: 7
 
-  # Job 2: SAST - Static Application Security Testing
+  # Job 2: SAST - Static Application Security Testing (only if code changed)
   sast-scan:
     name: SAST Security Scan
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       security-events: write
@@ -81,10 +129,12 @@ jobs:
       # Note: Semgrep SARIF upload requires Semgrep Pro
       # For demonstration, we continue on security findings
 
-  # Job 3: Validate Database Migrations
+  # Job 3: Validate Database Migrations (only if db/ changed)
   validate-migrations:
     name: Validate SQL Migrations
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.db == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
     env:
       DB_NAME: ${{ secrets.DB_NAME || 'devopsdb' }}
       DB_USER: ${{ secrets.DB_USER || 'devops' }}
@@ -140,11 +190,18 @@ jobs:
           echo "| ✅ Validated | All SQL migrations passed |" >> $GITHUB_STEP_SUMMARY
           echo "| 📁 Location | \`db/migrations/\` |" >> $GITHUB_STEP_SUMMARY
 
-  # Job 4: Build Docker Images
+  # Job 4: Build Docker Images (only builds what changed)
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-api, sast-scan, validate-migrations]
+    needs: [detect-changes, test-api, sast-scan, validate-migrations]
+    # Run if any code changed (even if upstream jobs were skipped due to no changes)
+    if: |
+      always() && 
+      (needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
+      (needs.sast-scan.result == 'success' || needs.sast-scan.result == 'skipped') &&
+      (needs.validate-migrations.result == 'success' || needs.validate-migrations.result == 'skipped')
     permissions:
       contents: read
       packages: write
@@ -152,6 +209,8 @@ jobs:
     outputs:
       api-image-digest: ${{ steps.build-api.outputs.digest }}
       web-image-digest: ${{ steps.build-web.outputs.digest }}
+      api-changed: ${{ needs.detect-changes.outputs.api }}
+      web-changed: ${{ needs.detect-changes.outputs.web }}
 
     steps:
       - name: Checkout code
@@ -169,6 +228,7 @@ jobs:
 
       - name: Extract metadata for API service
         id: meta-api
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}
@@ -180,6 +240,7 @@ jobs:
 
       - name: Build and push API service image
         id: build-api
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: ./api-service
@@ -192,6 +253,7 @@ jobs:
 
       - name: Extract metadata for Web service
         id: meta-web
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
@@ -203,6 +265,7 @@ jobs:
 
       - name: Build and push Web service image
         id: build-web
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: ./web-service
@@ -213,26 +276,48 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Job 5: Scan Docker Images for Vulnerabilities
+      - name: Build summary
+        run: |
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Built |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API Service | ${{ needs.detect-changes.outputs.api == 'true' && '✅ Yes' || '⏭️ Skipped (no changes)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web Service | ${{ needs.detect-changes.outputs.web == 'true' && '✅ Yes' || '⏭️ Skipped (no changes)' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Scan Docker Images for Vulnerabilities (only scans what was built)
   scan-images:
     name: Scan Images with Trivy
     runs-on: ubuntu-latest
-    needs: build-images
+    needs: [detect-changes, build-images]
+    if: |
+      always() && 
+      needs.build-images.result == 'success' &&
+      (needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
       security-events: write
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - service: api-service
+            changed: ${{ needs.detect-changes.outputs.api }}
           - service: web-service
+            changed: ${{ needs.detect-changes.outputs.web }}
 
     steps:
+      - name: Skip if service not changed
+        if: matrix.changed != 'true' && needs.detect-changes.outputs.workflow != 'true' && github.event_name != 'workflow_dispatch'
+        run: echo "⏭️ Skipping scan for ${{ matrix.service }} - no changes detected"
+
       - name: Checkout code
+        if: matrix.changed == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
+        if: matrix.changed == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -240,6 +325,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy vulnerability scanner
+        if: matrix.changed == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
@@ -249,6 +335,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Trivy for JSON report
+        if: matrix.changed == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ matrix.service == 'api-service' && env.API_IMAGE_NAME || env.WEB_IMAGE_NAME }}:${{ github.ref_name }}
@@ -266,12 +353,16 @@ jobs:
 
   # ==================== CD PHASE ====================
 
-  # Job 6: Deploy to Kubernetes
+  # Job 6: Deploy to Kubernetes (only deploys changed components)
   deploy-kubernetes:
     name: Deploy to Kubernetes
     runs-on: [self-hosted, k8s]
-    needs: [build-images, scan-images]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: [detect-changes, build-images, scan-images]
+    if: |
+      always() &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped') &&
+      (needs.scan-images.result == 'success' || needs.scan-images.result == 'skipped')
     environment:
       name: production
       url: http://devops-demo.local
@@ -285,32 +376,48 @@ jobs:
           kubectl version --client
           kubectl cluster-info
 
-      - name: Build Docker images locally with unique tag
+      - name: Set image tag
         run: |
           # Use commit SHA for unique image tags
           IMAGE_TAG="${GITHUB_SHA:0:7}-$(date +%s)"
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "API_CHANGED=${{ needs.detect-changes.outputs.api }}" >> $GITHUB_ENV
+          echo "WEB_CHANGED=${{ needs.detect-changes.outputs.web }}" >> $GITHUB_ENV
+          echo "DB_CHANGED=${{ needs.detect-changes.outputs.db }}" >> $GITHUB_ENV
+          echo "K8S_CHANGED=${{ needs.detect-changes.outputs.k8s }}" >> $GITHUB_ENV
 
+      - name: Build API Docker image (if changed)
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "🏗️ Building API service image..."
           docker build -t devops-demo/api-service:$IMAGE_TAG ./api-service
-          docker build -t devops-demo/web-service:$IMAGE_TAG ./web-service
-
-          # Also tag as latest for convenience
           docker tag devops-demo/api-service:$IMAGE_TAG devops-demo/api-service:latest
+
+      - name: Build Web Docker image (if changed)
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "🏗️ Building Web service image..."
+          docker build -t devops-demo/web-service:$IMAGE_TAG ./web-service
           docker tag devops-demo/web-service:$IMAGE_TAG devops-demo/web-service:latest
 
-      - name: Import images to K3s
+      - name: Import API image to K3s (if changed)
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
-          # Save and import images to K3s containerd with unique tag
           docker save devops-demo/api-service:$IMAGE_TAG | sudo k3s ctr images import -
-          docker save devops-demo/web-service:$IMAGE_TAG | sudo k3s ctr images import -
-
-          # Also import latest tags
           docker save devops-demo/api-service:latest | sudo k3s ctr images import -
-          docker save devops-demo/web-service:latest | sudo k3s ctr images import -
+          echo "✅ API image imported!"
 
-          # Verify images are available
-          sudo k3s ctr images list | grep devops-demo
-          echo "✅ Images imported successfully!"
+      - name: Import Web image to K3s (if changed)
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          docker save devops-demo/web-service:$IMAGE_TAG | sudo k3s ctr images import -
+          docker save devops-demo/web-service:latest | sudo k3s ctr images import -
+          echo "✅ Web image imported!"
+
+      - name: Verify imported images
+        run: |
+          sudo k3s ctr images list | grep devops-demo || echo "No devops-demo images found"
+          echo "✅ Images verified!"
 
       - name: Create namespace if not exists
         run: |
@@ -363,6 +470,7 @@ jobs:
       - name: Run Flyway database migrations
         run: |
           echo "📊 Running database migrations..."
+          echo "Note: Flyway only applies new/changed migrations automatically"
 
           # Apply Flyway ConfigMap and Job
           kubectl apply -f k8s/flyway-configmap.yaml
@@ -378,16 +486,20 @@ jobs:
 
           echo "✅ Database migrations completed!"
 
-      - name: Apply base Kubernetes manifests
+      - name: Apply Kubernetes manifests (if k8s/ changed)
+        if: needs.detect-changes.outputs.k8s == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
+          echo "📦 Applying K8s manifests..."
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/api-deployment.yaml
           kubectl apply -f k8s/api-service.yaml
           kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/web-service.yaml
           kubectl apply -f k8s/ingress.yaml
+          echo "✅ K8s manifests applied!"
 
-      - name: Update API service image and rolling update
+      - name: Update API service image (if API changed)
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo "🔄 Updating API service to version: $IMAGE_TAG"
 
@@ -411,7 +523,8 @@ jobs:
 
           echo "✅ API service image updated, rolling update initiated"
 
-      - name: Update Web service image and rolling update
+      - name: Update Web service image (if Web changed)
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo "🔄 Updating Web service to version: $IMAGE_TAG"
 
@@ -436,6 +549,7 @@ jobs:
           echo "✅ Web service image updated, rolling update initiated"
 
       - name: Wait for API deployment rollout
+        if: needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo "⏳ Waiting for API service rollout to complete..."
           kubectl rollout status deployment/api-service -n devops-demo --timeout=300s
@@ -445,6 +559,7 @@ jobs:
           kubectl get pods -n devops-demo -l app=api-service -o wide
 
       - name: Wait for Web deployment rollout
+        if: needs.detect-changes.outputs.web == 'true' || needs.detect-changes.outputs.workflow == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo "⏳ Waiting for Web service rollout to complete..."
           kubectl rollout status deployment/web-service -n devops-demo --timeout=300s
@@ -502,6 +617,37 @@ jobs:
             kubectl describe pods -n devops-demo
             exit 1
           fi
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changes Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          if [[ "$API_CHANGED" == "true" ]]; then
+            echo "| API Service | ✅ Updated |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| API Service | ⏭️ Skipped (no changes) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "$WEB_CHANGED" == "true" ]]; then
+            echo "| Web Service | ✅ Updated |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Web Service | ⏭️ Skipped (no changes) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "$DB_CHANGED" == "true" ]]; then
+            echo "| Database Migrations | ✅ Applied |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Database Migrations | ⏭️ Skipped (no new migrations) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "$K8S_CHANGED" == "true" ]]; then
+            echo "| K8s Manifests | ✅ Applied |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| K8s Manifests | ⏭️ Skipped (no changes) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Optimized Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "This pipeline uses **path-based filtering** to only build and deploy changed components, saving CI/CD resources and time." >> $GITHUB_STEP_SUMMARY
 
       - name: Cleanup old images from K3s
         run: |
