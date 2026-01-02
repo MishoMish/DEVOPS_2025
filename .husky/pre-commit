@@ -1,35 +1,114 @@
 #!/bin/sh
 # ===========================================
-# Pre-Commit Hook - Quick lint on staged files
+# Pre-Commit Hook - Lint all staged file types
 # ===========================================
 
 echo "🔍 Running pre-commit checks..."
 echo ""
 
-# Get staged JS files in api-service
-STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep '^api-service/.*\.js$' | sed 's|^api-service/||' || true)
+FAILED=0
 
-if [ -z "$STAGED_JS" ]; then
-  echo "✅ No JavaScript files staged, skipping lint."
+# Get all staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "✅ No files staged."
   exit 0
 fi
 
-cd api-service
+# ===========================================
+# Check JavaScript files (ESLint)
+# ===========================================
+JS_FILES=$(echo "$STAGED_FILES" | grep '^api-service/.*\.js$' | sed 's|^api-service/||' || true)
 
-# Ensure dependencies are installed
-if [ ! -d "node_modules" ]; then
-  echo "📦 Installing dependencies..."
-  npm ci --silent
+if [ -n "$JS_FILES" ]; then
+  echo "📝 Linting JavaScript files..."
+  cd api-service
+  
+  if [ ! -d "node_modules" ]; then
+    npm ci --silent
+  fi
+  
+  npx eslint $JS_FILES
+  if [ $? -ne 0 ]; then
+    FAILED=1
+  fi
+  cd ..
 fi
 
-# Run ESLint on staged files only
-echo "📝 Linting staged files..."
-npx eslint $STAGED_JS
+# ===========================================
+# Check HTML files (HTMLHint)
+# ===========================================
+HTML_FILES=$(echo "$STAGED_FILES" | grep '^web-service/.*\.html$' || true)
 
-if [ $? -ne 0 ]; then
+if [ -n "$HTML_FILES" ]; then
+  echo "📝 Checking HTML files..."
+  cd web-service
+  
+  for file in $(echo "$HTML_FILES" | sed 's|^web-service/||'); do
+    if command -v npx >/dev/null 2>&1; then
+      npx htmlhint "$file" 2>/dev/null || FAILED=1
+    fi
+  done
+  cd ..
+fi
+
+# ===========================================
+# Check Shell scripts (shellcheck)
+# ===========================================
+SHELL_FILES=$(echo "$STAGED_FILES" | grep '^scripts/.*\.sh$' || true)
+
+if [ -n "$SHELL_FILES" ]; then
+  echo "📝 Checking shell scripts..."
+  
+  for file in $SHELL_FILES; do
+    if command -v shellcheck >/dev/null 2>&1; then
+      shellcheck "$file" || FAILED=1
+    fi
+  done
+fi
+
+# ===========================================
+# Check YAML files (basic syntax)
+# ===========================================
+YAML_FILES=$(echo "$STAGED_FILES" | grep '\.yaml$' || true)
+
+if [ -n "$YAML_FILES" ]; then
+  echo "📝 Validating YAML files..."
+  
+  for file in $YAML_FILES; do
+    if command -v python3 >/dev/null 2>&1; then
+      python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null || FAILED=1
+    fi
+  done
+fi
+
+# ===========================================
+# Check SQL files (basic validation)
+# ===========================================
+SQL_FILES=$(echo "$STAGED_FILES" | grep '\.sql$' || true)
+
+if [ -n "$SQL_FILES" ]; then
+  echo "📝 Validating SQL files..."
+  
+  for file in $SQL_FILES; do
+    if [ -s "$file" ]; then
+      # Check for dangerous operations
+      if grep -qi "DROP DATABASE\|TRUNCATE" "$file"; then
+        echo "  ⚠️  $file contains dangerous SQL operations"
+        FAILED=1
+      fi
+    fi
+  done
+fi
+
+# ===========================================
+# Result
+# ===========================================
+if [ $FAILED -ne 0 ]; then
   echo ""
-  echo "❌ Lint failed! Fix the errors above before committing."
+  echo "❌ Pre-commit checks failed! Fix the errors above."
   exit 1
 fi
 
-echo "✅ Lint passed!"
+echo "✅ All checks passed!"
