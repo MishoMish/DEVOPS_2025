@@ -1,36 +1,30 @@
 #!/bin/bash
-# ===========================================
-# Pre-Push Hook - Full validation before push
-# ===========================================
+# Pre-push hook - run full validation
 
 # Load NVM if available
 [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
 
-echo "🚀 Running pre-push checks..."
+echo "Running pre-push checks..."
 echo ""
 
-# ===========================================
-# Step 0/4: Validate Branch Naming Convention
-# ===========================================
-BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-echo "🌿 Step 0/4: Validating branch name: '$BRANCH_NAME'"
+FAILED=0
+ERRORS=""
 
-# Allow main branches without restrictions
+# Validate branch name
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+echo "[BRANCH] Checking: $BRANCH_NAME"
+
 if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ] || [ "$BRANCH_NAME" = "develop" ]; then
-  echo "✅ Protected branch '$BRANCH_NAME' - naming check skipped"
+  echo "  OK - protected branch"
 else
   VALID_PATTERN="^(feature|feat|fix|bugfix|hotfix|chore|docs|refactor|test|style|perf|ci)/[0-9]+-[a-z0-9-]+$"
   
   if echo "$BRANCH_NAME" | grep -Eq "$VALID_PATTERN"; then
-    echo "✅ Branch name follows convention!"
+    echo "  OK - valid naming"
   else
-    echo ""
-    echo "❌ Invalid branch name: '$BRANCH_NAME'"
-    echo ""
-    echo "Branch names must follow: <type>/<task-number>-<description>"
-    echo "Examples: feature/123-add-login, fix/456-memory-leak"
-    echo ""
-    exit 1
+    FAILED=1
+    ERRORS="$ERRORS\n[BRANCH NAME INVALID]\nGot: '$BRANCH_NAME'\nExpected: <type>/<task-number>-<description>\nExamples: feature/123-add-login, fix/456-memory-leak\n"
+    echo "  FAILED - invalid branch name"
   fi
 fi
 echo ""
@@ -40,51 +34,56 @@ cd api-service
 
 # Ensure dependencies are installed
 if [ ! -d "node_modules" ]; then
-  echo "📦 Installing dependencies..."
+  echo "[NPM] Installing dependencies..."
   npm ci --silent
 fi
 
-# ===========================================
-# Step 1/4: Run full linting
-# ===========================================
-echo "📝 Step 1/4: Running full lint check..."
-npm run lint
+# Step 1: Lint
+echo "[LINT] Running ESLint..."
+LINT_OUTPUT=$(npm run lint 2>&1)
 if [ $? -ne 0 ]; then
-  echo "❌ Linting failed!"
-  exit 1
+  FAILED=1
+  ERRORS="$ERRORS\n[ESLINT FAILED]\n$LINT_OUTPUT\n"
+  echo "  FAILED - see errors below"
+else
+  echo "  OK"
 fi
-echo "✅ Linting passed!"
 echo ""
 
-# ===========================================
-# Step 2/4: Run unit tests
-# ===========================================
-echo "🧪 Step 2/4: Running unit tests..."
-npm test -- --passWithNoTests --coverage=false
+# Step 2: Tests
+echo "[TEST] Running unit tests..."
+TEST_OUTPUT=$(npm test -- --passWithNoTests --coverage=false 2>&1)
 if [ $? -ne 0 ]; then
-  echo "❌ Unit tests failed!"
-  exit 1
+  FAILED=1
+  ERRORS="$ERRORS\n[TESTS FAILED]\n$TEST_OUTPUT\n"
+  echo "  FAILED - see errors below"
+else
+  echo "  OK"
 fi
-echo "✅ Unit tests passed!"
 echo ""
 
-# ===========================================
-# Step 3/4: Check for security vulnerabilities
-# ===========================================
-echo "🔒 Step 3/4: Checking for security vulnerabilities..."
-npm audit --audit-level=high
+# Step 3: Security
+echo "[SECURITY] Checking npm audit..."
+AUDIT_OUTPUT=$(npm audit --audit-level=high 2>&1)
 if [ $? -ne 0 ]; then
-  echo "⚠️  Security vulnerabilities found!"
-  echo "💡 Run 'npm audit fix' to fix them."
-  exit 1
+  FAILED=1
+  ERRORS="$ERRORS\n[SECURITY VULNERABILITIES]\n$AUDIT_OUTPUT\nRun 'npm audit fix' to fix.\n"
+  echo "  FAILED - vulnerabilities found"
+else
+  echo "  OK - no high severity issues"
 fi
-echo "✅ No high severity vulnerabilities!"
 echo ""
 
-# ===========================================
-# Step 4/4: Done
-# ===========================================
-echo "============================================"
-echo "✅ All pre-push checks passed!"
-echo "🚀 Pushing to remote..."
-echo "============================================"
+# Result
+if [ $FAILED -ne 0 ]; then
+  echo ""
+  echo "========================================"
+  echo "PRE-PUSH FAILED - ERRORS:"
+  echo "========================================"
+  echo -e "$ERRORS"
+  echo "========================================"
+  echo "Fix the above errors and try again."
+  exit 1
+fi
+
+echo "All checks passed - pushing..."

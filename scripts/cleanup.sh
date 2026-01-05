@@ -24,9 +24,7 @@
 
 NAMESPACE=${1:-devops-demo}
 
-echo "🧹 Cleaning up Kubernetes resources"
-echo "Namespace: $NAMESPACE"
-echo "===================================="
+echo "Cleaning up resources in: $NAMESPACE"
 echo ""
 
 read -p "Are you sure you want to delete all resources in namespace '$NAMESPACE'? (yes/no): " CONFIRM
@@ -37,7 +35,7 @@ if [ "$CONFIRM" != "yes" ]; then
 fi
 
 echo ""
-echo "🗑️  Deleting resources..."
+echo "Deleting resources..."
 
 kubectl delete -f k8s/ingress.yaml --ignore-not-found=true
 kubectl delete -f k8s/web-service.yaml --ignore-not-found=true
@@ -50,10 +48,10 @@ read -p "Do you want to delete the namespace '$NAMESPACE' as well? (yes/no): " D
 
 if [ "$DELETE_NS" = "yes" ]; then
     kubectl delete namespace $NAMESPACE
-    echo "✅ Namespace deleted"
+    echo "Namespace deleted"
 else
-    echo "ℹ️  Namespace preserved"
+    echo "Namespace preserved"
 fi
 
 echo ""
-echo "✅ Cleanup complete!"
+echo "Cleanup complete!"

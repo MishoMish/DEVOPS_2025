@@ -32,11 +32,10 @@ NAMESPACE="devops-demo"
 KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
 export KUBECONFIG
 
-# Get script directory for relative paths
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 
-echo "🚀 Starting K8s services health check..."
+echo "Starting health check..."
 
 # Wait for K3s to be ready
 echo "⏳ Waiting for K3s to be ready..."

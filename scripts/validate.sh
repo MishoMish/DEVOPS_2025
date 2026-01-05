@@ -34,8 +34,7 @@
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$REPO_ROOT"
 
-echo "🔍 DevOps Project Validation"
-echo "=============================="
+echo "Checking project..."
 echo ""
 
 # Color codes (basic for sh)

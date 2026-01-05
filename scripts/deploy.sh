@@ -25,55 +25,54 @@
 
 NAMESPACE=${1:-devops-demo}
 
-echo "🚀 Deploying to Kubernetes namespace: $NAMESPACE"
-echo "=================================================="
+echo "Deploying to namespace: $NAMESPACE"
 echo ""
 
 # Check if kubectl is available
 if ! command -v kubectl >/dev/null 2>&1; then
-    echo "❌ kubectl is not installed"
+    echo "Error: kubectl is not installed"
     exit 1
 fi
 
 # Check cluster connectivity
-echo "📡 Checking cluster connectivity..."
+echo "Checking cluster connectivity..."
 if ! kubectl cluster-info >/dev/null 2>&1; then
-    echo "❌ Cannot connect to Kubernetes cluster"
+    echo "Error: Cannot connect to Kubernetes cluster"
     exit 1
 fi
-echo "✅ Connected to cluster"
+echo "Connected to cluster"
 echo ""
 
 # Create namespace if it doesn't exist
-echo "📦 Creating namespace: $NAMESPACE"
+echo "Creating namespace: $NAMESPACE"
 kubectl apply -f k8s/namespace.yaml
 
 echo ""
-echo "🚢 Deploying API service..."
+echo "Deploying API service..."
 kubectl apply -f k8s/api-deployment.yaml
 kubectl apply -f k8s/api-service.yaml
 
 echo ""
-echo "🌐 Deploying Web service..."
+echo "Deploying Web service..."
 kubectl apply -f k8s/web-deployment.yaml
 kubectl apply -f k8s/web-service.yaml
 
 echo ""
-echo "🔀 Deploying Ingress..."
+echo "Deploying Ingress..."
 kubectl apply -f k8s/ingress.yaml
 
 echo ""
-echo "⏳ Waiting for deployments to be ready..."
+echo "Waiting for deployments to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/api-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/web-service -n $NAMESPACE
 
 echo ""
-echo "✅ Deployment complete!"
+echo "Deployment complete!"
 echo ""
-echo "📊 Current status:"
+echo "Current status:"
 kubectl get all -n $NAMESPACE
 
 echo ""
-echo "🌍 Access the application:"
+echo "Access the application:"
 echo "   Add to /etc/hosts: \$(minikube ip) devops-demo.local"
 echo "   Then visit: http://devops-demo.local"

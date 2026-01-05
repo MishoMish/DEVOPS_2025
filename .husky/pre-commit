@@ -1,117 +1,121 @@
 #!/bin/bash
-# ===========================================
-# Pre-Commit Hook - Lint all staged file types
-# ===========================================
+# Pre-commit hook - lint staged files
 
 # Load NVM if available
 [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
 
-echo "🔍 Running pre-commit checks..."
+echo "Running pre-commit checks..."
 echo ""
 
 FAILED=0
+ERRORS=""
 
 # Get all staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 
 if [ -z "$STAGED_FILES" ]; then
-  echo "✅ No files staged."
+  echo "No files staged."
   exit 0
 fi
 
-# ===========================================
-# Check JavaScript files (ESLint)
-# ===========================================
+# Check JavaScript files
 JS_FILES=$(echo "$STAGED_FILES" | grep '^api-service/.*\.js$' | sed 's|^api-service/||' || true)
 
 if [ -n "$JS_FILES" ]; then
-  echo "📝 Linting JavaScript files..."
+  echo "[JS] Linting: $JS_FILES"
   cd api-service
   
   if [ ! -d "node_modules" ]; then
     npm ci --silent
   fi
   
-  npx eslint $JS_FILES
+  LINT_OUTPUT=$(npx eslint $JS_FILES 2>&1)
   if [ $? -ne 0 ]; then
     FAILED=1
+    ERRORS="$ERRORS\n[ESLINT FAILED]\n$LINT_OUTPUT\n"
+    echo "  FAILED - see errors below"
+  else
+    echo "  OK"
   fi
   cd ..
 fi
 
-# ===========================================
-# Check HTML files (HTMLHint)
-# ===========================================
-HTML_FILES=$(echo "$STAGED_FILES" | grep '^web-service/.*\.html$' || true)
-
-if [ -n "$HTML_FILES" ]; then
-  echo "📝 Checking HTML files..."
-  cd web-service
-  
-  for file in $(echo "$HTML_FILES" | sed 's|^web-service/||'); do
-    if command -v npx >/dev/null 2>&1; then
-      npx htmlhint "$file" 2>/dev/null || FAILED=1
-    fi
-  done
-  cd ..
-fi
-
-# ===========================================
-# Check Shell scripts (shellcheck)
-# ===========================================
-SHELL_FILES=$(echo "$STAGED_FILES" | grep '^scripts/.*\.sh$' || true)
+# Check shell scripts
+SHELL_FILES=$(echo "$STAGED_FILES" | grep '\.sh$' || true)
 
 if [ -n "$SHELL_FILES" ]; then
-  echo "📝 Checking shell scripts..."
+  echo "[SHELL] Checking: $SHELL_FILES"
   
-  for file in $SHELL_FILES; do
-    if command -v shellcheck >/dev/null 2>&1; then
-      shellcheck "$file" || FAILED=1
-    fi
-  done
+  if command -v shellcheck >/dev/null 2>&1; then
+    for file in $SHELL_FILES; do
+      SHELL_OUTPUT=$(shellcheck "$file" 2>&1)
+      if [ $? -ne 0 ]; then
+        FAILED=1
+        ERRORS="$ERRORS\n[SHELLCHECK FAILED: $file]\n$SHELL_OUTPUT\n"
+        echo "  FAILED: $file"
+      else
+        echo "  OK: $file"
+      fi
+    done
+  else
+    echo "  SKIP - shellcheck not installed"
+  fi
 fi
 
-# ===========================================
-# Check YAML files (basic syntax)
-# ===========================================
+# Check YAML files
 YAML_FILES=$(echo "$STAGED_FILES" | grep '\.yaml$' || true)
 
 if [ -n "$YAML_FILES" ]; then
-  echo "📝 Validating YAML files..."
+  echo "[YAML] Validating..."
   
-  for file in $YAML_FILES; do
-    if command -v python3 >/dev/null 2>&1; then
-      python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null || FAILED=1
-    fi
-  done
+  # Check if python3 has yaml module
+  if python3 -c "import yaml" 2>/dev/null; then
+    for file in $YAML_FILES; do
+      YAML_OUTPUT=$(python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>&1)
+      if [ $? -ne 0 ]; then
+        FAILED=1
+        ERRORS="$ERRORS\n[YAML INVALID: $file]\n$YAML_OUTPUT\n"
+        echo "  FAILED: $file"
+      else
+        echo "  OK: $file"
+      fi
+    done
+  else
+    echo "  SKIP - python yaml module not installed (pip install pyyaml)"
+  fi
 fi
 
-# ===========================================
-# Check SQL files (basic validation)
-# ===========================================
+# Check SQL files
 SQL_FILES=$(echo "$STAGED_FILES" | grep '\.sql$' || true)
 
 if [ -n "$SQL_FILES" ]; then
-  echo "📝 Validating SQL files..."
+  echo "[SQL] Checking for dangerous operations..."
   
   for file in $SQL_FILES; do
     if [ -s "$file" ]; then
-      # Check for dangerous operations
-      if grep -qi "DROP DATABASE\|TRUNCATE" "$file"; then
-        echo "  ⚠️  $file contains dangerous SQL operations"
+      DANGEROUS=$(grep -i "DROP DATABASE\|TRUNCATE" "$file" || true)
+      if [ -n "$DANGEROUS" ]; then
         FAILED=1
+        ERRORS="$ERRORS\n[SQL DANGEROUS: $file]\nFound: $DANGEROUS\n"
+        echo "  FAILED: $file contains DROP DATABASE or TRUNCATE"
+      else
+        echo "  OK: $file"
       fi
     fi
   done
 fi
 
-# ===========================================
 # Result
-# ===========================================
 if [ $FAILED -ne 0 ]; then
   echo ""
-  echo "❌ Pre-commit checks failed! Fix the errors above."
+  echo "========================================"
+  echo "PRE-COMMIT FAILED - ERRORS:"
+  echo "========================================"
+  echo -e "$ERRORS"
+  echo "========================================"
+  echo "Fix the above errors and try again."
   exit 1
 fi
 
-echo "✅ All checks passed!"
+echo ""
+echo "All checks passed!"

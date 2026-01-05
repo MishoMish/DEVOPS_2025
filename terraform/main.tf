@@ -65,9 +65,8 @@ variable "postgres_user" {
 }
 
 variable "postgres_password" {
-  description = "PostgreSQL password"
+  description = "PostgreSQL password (required - no default for security)"
   type        = string
-  default     = "devops123"
   sensitive   = true
 }
 

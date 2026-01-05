@@ -31,7 +31,7 @@
 
 set -e
 
-echo "🔧 Setting up Git hooks..."
+echo "Setting up hooks..."
 echo ""
 
 # Get the repository root

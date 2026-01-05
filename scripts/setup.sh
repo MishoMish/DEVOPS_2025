@@ -38,7 +38,7 @@
 # Local Development Setup Script
 # This script helps set up the local development environment
 
-echo "🚀 DevOps Demo - Local Setup"
+echo "DevOps Demo - Local Setup"
 echo "=============================="
 echo ""
 

@@ -32,9 +32,7 @@
 
 set -e
 
-echo "============================================"
-echo "🏗️  Running Local CI Pipeline"
-echo "============================================"
+echo "Running local CI..."
 echo ""
 
 REPO_ROOT=$(git rev-parse --show-toplevel)

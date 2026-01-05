@@ -13,7 +13,7 @@ CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
 
 -- Add some sample messages
 INSERT INTO messages (author, content) VALUES 
-    ('DevOps Bot', 'Welcome to the DevOps Demo! 🚀'),
-    ('System', 'Database migrations working correctly ✅');
+    ('DevOps Bot', 'Welcome to the DevOps Demo!'),
+    ('System', 'Database migrations working correctly.');
 
 COMMENT ON TABLE messages IS 'Guestbook messages from visitors';
